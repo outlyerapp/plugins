@@ -1,121 +1,104 @@
 #!/usr/bin/env python
 
-import argparse
 import sys
-import re
 from OpenSSL import SSL
 import socket
 import datetime
 
-version = '1.0'
+"""
+
+    Nagios check to test SSL certificate expiration and cname is correct
+
+"""
+
+HOSTNAME = 'www.dataloop.io'
+PORT = 443
+CN = '*.dataloop.io'
+METHOD = 'SSLv23' # Options : (SSLv2|SSLv3|SSLv23|TLSv1) defaults to SSLv23'
+
+WARN = 15  # Threshold for warning alert in days
+CRIT = 5   # Threshold for critical alert in days
 
 
-### print status and exit with return code
-def exitResult(nbefore, nafter):
-    nagiosStatus2Text = {
-        0: "OK",
-        1: "WARN",
-        2: "CRIT"
-    }
+def get_options():
+    options = {'host': HOSTNAME,
+               'port': PORT,
+               'method': 'SSLv23',
+               'critical': CRIT,
+               'warning': WARN,
+               'cn': CN}
+    return options
 
-    now = datetime.datetime.utcnow()
-    if now > nafter:
-        diff = now - nafter
+
+def main():
+    options = get_options()
+
+    # Initialize context
+    if options['method'] == 'SSLv3':
+        ctx = SSL.Context(SSL.SSLv3_METHOD)
+    elif options['method'] == 'SSLv2':
+        ctx = SSL.Context(SSL.SSLv2_METHOD)
+    elif options['method'] == 'SSLv23':
+        ctx = SSL.Context(SSL.SSLv23_METHOD)
     else:
-        diff = nafter - now
+        ctx = SSL.Context(SSL.TLSv1_METHOD)
 
-    expire = {
-        'days': int(diff.days),
-        'minutes': int(diff.seconds/60),
-        'hours': int(diff.seconds/60/60),
-        'expired': nafter < now,
-        'date': nafter,
-    }
-    exitCode = 2
+    # Set up client
+    sock = SSL.Connection(ctx, socket.socket(socket.AF_INET, socket.SOCK_STREAM))
+    sock.connect((options['host'], int(options['port'])))
+    # Send an EOF
+    try:
+        sock.send("\x04")
+        sock.shutdown()
+        peer_cert = sock.get_peer_certificate()
+        sock.close()
+    except SSL.Error, e:
+        print e
 
-    # invalid
-    if nbefore > now:
-        summary = "Certificate is invalid"
+    exit_status = 0
+    exit_message = []
 
-    # expired
-    elif expire['expired']:
-        summary = "Certificate expired {days} days ago".format(**expire)
+    cur_date = datetime.datetime.utcnow()
+    cert_nbefore = datetime.datetime.strptime(peer_cert.get_notBefore(), '%Y%m%d%H%M%SZ')
+    cert_nafter = datetime.datetime.strptime(peer_cert.get_notAfter(), '%Y%m%d%H%M%SZ')
 
-    # crit...
-    elif args.crit and args.crit > expire['days']:
-        if expire['days'] > 0:
-            summary = "Certificate expire in {days} days".format(**expire)
-        elif expire['hours'] > 1:
-            summary = "Certificate expire in {hours} hours".format(**expire)
-        else:
-            summary = "Certificate expire in {minutes} minutes".format(**expire)
+    expire_days = int((cert_nafter - cur_date).days)
 
-    # warn...
-    elif args.warn and args.warn > expire['days']:
-        summary = "Certificate expire in {days} days".format(**expire)
-        exitCode = 1
-
-    # ok	
+    if cert_nbefore > cur_date:
+        if exit_status < 2:
+            exit_status = 2
+        exit_message.append('C: cert is not valid')
+    elif expire_days < 0:
+        if exit_status < 2:
+            exit_status = 2
+        exit_message.append('Expire critical (expired)')
+    elif options['critical'] > expire_days:
+        if exit_status < 2:
+            exit_status = 2
+        exit_message.append('Expire critical')
+    elif options['warning'] > expire_days:
+        if exit_status < 1:
+            exit_status = 1
+        exit_message.append('Expire warning')
     else:
-        summary = "Certificate expire {date:%Y-%m-%d, %H:%M} UTC".format(**expire)
-        exitCode = 0
+        exit_message.append('Expire OK')
 
-    # output and exit
-    print "{nagiosStatus}: {summary}|days={days:d};{warn:d};{crit:d};0".format(
-        nagiosStatus=nagiosStatus2Text[exitCode],
-        summary=summary,
-        warn=args.warn,
-        crit=args.crit,
-        **expire
-    )
+    exit_message.append('['+str(expire_days)+'d]')
 
-    sys.exit(exitCode)
+    for part in peer_cert.get_subject().get_components():
+        if part[0] == 'CN':
+            cert_cn = part[1]
 
-### parse args
-parser = argparse.ArgumentParser(description='This plugin can check ssl certificates.')
-parser.add_argument('-v', '--version', action='version', version='%(prog)s ' + version)
-parser.add_argument('-p', '--proxy',
-                    help='Proxy to use, e.g. proxy:port or user:pass@proxy:port')
-parser.add_argument('-t', '--timeout',
-                    help='Timout in seconds')
-parser.add_argument('-w', '--warning', dest='warn', type=int, default=30,
-                    help='Days until certificate expires to be in warning-state. (Default: 30)')
-parser.add_argument('-c', '--critical', dest='crit', type=int, default=0,
-                    help='Days until certificate expires to be in critical-state. (Default: 0)')
-parser.add_argument('domain', nargs='?')
-args = parser.parse_args()
+    if options['cn'] != '' and options['cn'].lower() != cert_cn.lower():
+        if exit_status < 2:
+            exit_status = 2
+        exit_message.append(' - CN mismatch')
+    else:
+        exit_message.append(' - CN OK')
 
-# domain given?
-if not args.domain:
-    parser.print_help()
-    sys.exit('Domain required!')
+    exit_message.append(' - cn:'+cert_cn)
 
-### create socket
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.settimeout(args.timeout)
+    print ''.join(exit_message)
+    sys.exit(exit_status)
 
-### use proxy?
-if args.proxy:
-    proxy = re.search(r'^(?:([^:]+):([^:]*)@)?([^:]+):(.*)$', args.proxy).groups()
-    s.connect((proxy[2], int(proxy[3])))
-    CONNECT = "CONNECT %s HTTP/1.0\r\nConnection: close\r\n\r\n" % (args.domain)
-    s.send(CONNECT)
-    s.recv(4096)
-else:
-    s.connect((args.domain, 443))
-
-### send request
-ctx = SSL.Context(SSL.SSLv23_METHOD)
-ss = SSL.Connection(ctx, s)
-ss.set_connect_state()
-ss.do_handshake()
-
-### parse cert
-cert = ss.get_peer_certificate()
-cert_nbefore = datetime.datetime.strptime(cert.get_notBefore(), '%Y%m%d%H%M%SZ')
-cert_nafter = datetime.datetime.strptime(cert.get_notAfter(), '%Y%m%d%H%M%SZ')
-exitResult(cert_nbefore, cert_nafter)
-
-### close socket
-ss.shutdown()
-ss.close()
+main()
