@@ -236,13 +236,13 @@ def _open_tmpdb():
 def _get_tmpdb_difference(key, currentValue, tmpdb):
 
     prevvalue = 0
-    if tmpdb[key] is not None:
-        prevvalue = int(tmpdb[key])
+    if tmpdb.has_key(key):
+        prevvalue = tmpdb[key]
     else:
         # Assume plugin is being run first time so shouldn't alert
         prevvalue = currentValue
 
-    return int(currentValue) - prevvalue
+    return int(currentValue) - int(prevvalue)
 
 # Run Main
 main()
