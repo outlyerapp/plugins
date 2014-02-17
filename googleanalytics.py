@@ -3,6 +3,7 @@
 import httplib2
 import time
 import shelve
+import traceback
 from apiclient.discovery import build
 from apiclient.errors import HttpError
 from oauth2client.client import SignedJwtAssertionCredentials
@@ -119,22 +120,26 @@ def main():
     except TypeError, error:
         # Handle errors in constructing a query.
         print 'There was an error in constructing your query : %s' % error
+        traceback.print_exc()
         exit(2)
 
     except HttpError, error:
         # Handle API errors.
         print 'Arg, there was an API error : %s : %s' % (error.resp.status, error._get_reason())
+        traceback.print_exc()
         exit(2)
 
     except AccessTokenRefreshError:
         # Handle Auth errors.
         print 'The credentials have been revoked or expired, ' \
               'please check your private key file and SERVICE_ACCOUNT_EMAIL are valid'
+        traceback.print_exc()
         exit(2)
 
     except IOError, error:
         # Handle file system errors
         print 'There was an error opening a file: %s' % error
+        traceback.print_exc()
         exit(2)
 
     finally:
