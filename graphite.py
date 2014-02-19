@@ -5,12 +5,12 @@ import urllib
 
 # Alert off of Graphite metrics.
 
-REVERSE = False
+REVERSE = True  # Alert when the value is UNDER warn/crit instead of OVER'
 
-TYPE = 'HW'
+HW = False
 
-CRIT = 10000
-WARN = 9000
+CRIT = 23000
+WARN = 24000
 
 CRITUPPER = ''
 CRITLOWER = ''
@@ -95,7 +95,7 @@ def get_value(url, seconds=0):
 
 def main():
 
-    if TYPE == 'HW':
+    if HW:
         graphite_data, graphite_lower, graphite_upper = get_hw_value(URL, SECONDS)
 
         print 'Current value: %s, lower band: %s, upper band: %s' % (graphite_data, graphite_lower, graphite_upper)
@@ -108,14 +108,14 @@ def main():
         else:
             sys.exit(STATE_OK)
 
-    elif DIFF1 or DIFF2:
+    if DIFF1:
         graphite_data1 = get_value(DIFF1, SECONDS)
         graphite_data2 = get_value(DIFF2, SECONDS)
         graphite_data = abs(graphite_data1 - graphite_data2)
 
     else:
         graphite_data = get_value(URL, SECONDS)
-        print 'Current value: %s, warn threshold: %s, crit threshold: %s' % (graphite_data, WARN, CRIT)
+        print 'Current value: %s, warn threshold: %s, crit threshold: %s | hubs=%s' % (graphite_data, WARN, CRIT, graphite_data)
 
     if REVERSE is True:
         if CRIT >= graphite_data:
@@ -131,6 +131,5 @@ def main():
             sys.exit(STATE_WARNING)
         else:
             sys.exit(STATE_OK)
-
 
 main()
