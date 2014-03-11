@@ -8,11 +8,11 @@ import psutil
 
 # Default values are percentages
 
-MEMORY_CRIT = 80
-MEMORY_WARN = 70
+MEMORY_CRIT = 100
+MEMORY_WARN = 100
 
-CPU_CRIT = 90
-CPU_WARN = 80
+CPU_CRIT = 100
+CPU_WARN = 100
 
 DISK_CRIT = 98
 DISK_WARN = 95
