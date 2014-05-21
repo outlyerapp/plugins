@@ -12,7 +12,7 @@ RIAK_PORT = 8098
 
 
 def _nagios(hdr, msg, code):
-    print '%s: %s' % (hdr, msg)
+    print '%s | %s' % (hdr, msg)
     return code
 
 
@@ -34,15 +34,15 @@ def main():
                       help='Host to connect to.', metavar='HOST')
     parser.add_option('-p', '--port', dest='port', type='int', default=RIAK_PORT,
                       help='Port to connect to.', metavar='PORT')
-    parser.add_option('--95th', dest='t95', metavar='THRESHOLDS', default='15,25,5,10',
+    parser.add_option('--95th', dest='t95', metavar='THRESHOLDS', default='500,500,500,500',
                       help='"PW,PC,GW,GC" values for 95th percentile data')
-    parser.add_option('--99th', dest='t99', metavar='THRESHOLDS', default='50,100,25,50',
+    parser.add_option('--99th', dest='t99', metavar='THRESHOLDS', default='500,500,500,500',
                       help='"PW,PC,GW,GC" values for 99th percentile data')
-    parser.add_option('--100th', dest='t100', metavar='THRESHOLDS', default='50,100,25,50',
+    parser.add_option('--100th', dest='t100', metavar='THRESHOLDS', default='500,500,500,500',
                       help='"PW,PC,GW,GC" values for 100th percentile data')
-    parser.add_option('--mean', dest='tmean', metavar='THRESHOLDS', default='50,100,25,50',
+    parser.add_option('--mean', dest='tmean', metavar='THRESHOLDS', default='500,500,500,500',
                       help='"PW,PC,GW,GC" values for mean percentile data')
-    parser.add_option('--median', dest='tmedian', metavar='THRESHOLDS', default='50,100,25,50',
+    parser.add_option('--median', dest='tmedian', metavar='THRESHOLDS', default='500,500,500,500',
                       help='"PW,PC,GW,GC" values for median percentile data')
     parser.add_option('--95th-objsize', dest='o95', metavar='THRESHOLDS', default='150000,600000',
                       help='"W,C" values for 95th percentile data')
@@ -95,11 +95,11 @@ def main():
             return
         val_ms = int(obj[metric] / 1000)
         if val_ms > critical:
-            crit.append('%s: %dms (>%dms)' % (metric, val_ms, critical))
+            crit.append('%s=%dms (>%dms)' % (metric, val_ms, critical))
         elif val_ms > warning:
-            warn.append('%s: %dms (>%dms)' % (metric, val_ms, warning))
+            warn.append('%s=%dms (>%dms)' % (metric, val_ms, warning))
         else:
-            ok.append('%s: %dms' % (metric, val_ms))
+            ok.append('%s=%dms' % (metric, val_ms))
 
     for ttype in types:
         val = getattr(options, 't%s' % ttype, None)
@@ -115,11 +115,11 @@ def main():
             return
         val = int(obj[metric])
         if val > critical:
-            crit.append('%s: %d (>%d)' % (metric, val, critical))
+            crit.append('%s=%d (>%d)' % (metric, val, critical))
         elif val > warning:
-            warn.append('%s: %d (>%d)' % (metric, val, warning))
+            warn.append('%s=%d (>%d)' % (metric, val, warning))
         else:
-            ok.append('%s: %d' % (metric, val))
+            ok.append('%s=%d' % (metric, val))
 
     for ptuple in (('o', 'objsize'), ('s', 'siblings')):
         prefix, stat = ptuple
@@ -145,9 +145,9 @@ def main():
             crit.append('nodes: unable to determine connected nodes')
 
     if len(crit) > 0:
-        return critical(', '.join(crit))
+        return critical(';;;; '.join(crit))
     elif len(warn) > 0:
-        return warning(', '.join(warn))
-    return okay(', '.join(ok))
+        return warning(';;;; '.join(warn))
+    return okay(';;;; '.join(ok))
 
 print sys.exit(main())
