@@ -99,10 +99,24 @@ def check_net():
     net = dict(net_download=rx, net_upload=sx)
     return net
 
+def check_load():
+    """returns a dict of load num : value"""
+
+    try:
+        load = os.getloadavg()
+        load_avg = {}
+        load_avg['load_1_min'] = str(load[0])
+        load_avg['load_5_min'] = str(load[1])
+        load_avg['load_15_min'] = str(load[2])
+
+        return load_avg
+    
+    except OSError:
+        pass
 
 def main():
 
-    dicts = [check_disks(), check_memory(), check_cpu(), check_net()]
+    dicts = [check_disks(), check_memory(), check_cpu(), check_net(), check_load()]
 
     perf = ""
     result = {}
