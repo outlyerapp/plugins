@@ -111,8 +111,8 @@ def check_load():
 
         return load_avg
     
-    except OSError:
-        pass
+    except:
+        return {}
 
 def main():
 
