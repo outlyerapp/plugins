@@ -1,10 +1,13 @@
 #!/usr/bin/env python
-
+import sys
 import subprocess
 
-ps = subprocess.Popen(('mongostat', '-n', '1', '--noheaders'), stdout=subprocess.PIPE)
-output = subprocess.check_output(('tail', '-1'), stdin=ps.stdout)
-ps.wait()
+try:
+    ps = subprocess.Popen(('mongostat', '-n', '1', '--noheaders'), stdout=subprocess.PIPE)
+    output = subprocess.check_output(('tail', '-1'), stdin=ps.stdout)
+    ps.wait()
+except:
+    sys.exit(2)
 
 metrics = output.split()
 
@@ -48,3 +51,4 @@ print "OK | insert=%s;;;; query=%s;;;; update=%s;;;; delete=%s;;;; getmore=%s;;;
          net_in,
          net_out,
          connections)
+sys.exit(0)
