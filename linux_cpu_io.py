@@ -207,23 +207,19 @@ def command_line_validate(argv):
     sys.exit(CRITICAL)
   return
 
-# main function
-def main():
-  argv = sys.argv[1:]
-  # set crit,warn,io_crit,io_warn
-  command_line_validate(argv)
-  
-  # Read the stats from /proc/stat - results are in cpu_percent[] and io_wait_percent[]
-  get_cpu_stats()
+argv = sys.argv[1:]
+# set crit,warn,io_crit,io_warn
+command_line_validate(argv)
 
-  # Build the performance data message
-  perf_message = performance_data()
+# Read the stats from /proc/stat - results are in cpu_percent[] and io_wait_percent[]
+get_cpu_stats()
 
-  # Build the status message (service output message) and set the exit code
-  (exit_code,result_message) = check_status()
+# Build the performance data message
+perf_message = performance_data()
 
-  print  result_message, '|', perf_message
-  sys.exit(exit_code)
+# Build the status message (service output message) and set the exit code
+(exit_code,result_message) = check_status()
 
-if __name__ == '__main__':
-  main()
+print  result_message, '|', perf_message
+sys.exit(exit_code)
+
