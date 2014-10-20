@@ -1,65 +1,43 @@
 #!/usr/bin/python
+import requests
 
-from optparse import OptionParser
-import urllib2
-import json
-#import pprint
-
-HOST = ""
-QUEUE = ""
-USER = "guest"
-PASS = "guest"
+HOST = "localhost"
+QUEUES = [""]
+QUEUES_VHOST = '%%2f'
+USERNAME = "guest"
+PASSWORD = "guest"
 PORT = "15672"
-CRIT = 20000
-WARN = 10000
+
+#url = "http://%s:%s/api/queues/%%2f/%s" % (HOST, PORT, QUEUE)
+
+URL = "http://%s:%s/api/overview" % (HOST, PORT)
 
 
-def getOptions():
-    arguments = OptionParser()
-    arguments.add_option("--host", dest="host", help="Host rabbitmq is running on", type="string", default=HOST)
-    arguments.add_option("--queue", dest="queue", help="Name of the queue in inspect", type="string", default=QUEUE)
-    arguments.add_option("--username", dest="username", help="RabbitMQ API username", type="string", default=USER)
-    arguments.add_option("--password", dest="password", help="RabbitMQ API password", type="string", default=PASS)
-    arguments.add_option("--port", dest="port", help="RabbitMQ API port", type="string", default=PORT)
-    arguments.add_option("--warning-queue-size", dest="warn_queue", help="Size of the queue to alert as warning",
-                         type="int", default=WARN)
-    arguments.add_option("--critical-queue-size", dest="crit_queue", help="Size of the queue to alert as critical",
-                         type="int", default=CRIT)
-    return arguments.parse_args()[0]
+def get_data(url):
+    r = requests.get(url, auth=(USERNAME, PASSWORD))
+    return r.json()
+
+# Get overview stats
+overview = get_data("http://%s:%s/api/overview" % (HOST, PORT))
+
+metrics = {}
+metrics['total_messages'] = overview['queue_totals']['messages']
+metrics['total_messages_rate'] = overview['queue_totals']['messages_details']['rate']
+metrics['total_messages_ready'] = overview['queue_totals']['messages_ready']
+metrics['total_messages_ready_rate'] = overview['queue_totals']['messages_ready_details']['rate']
+metrics['total_messages_unack'] = overview['queue_totals']['messages_unacknowledged']
+metrics['total_messages_unack_rate'] = overview['queue_totals']['messages_unacknowledged_details']['rate']
+metrics['total_consumers'] = overview['object_totals']['consumers']
+metrics['total_queues'] = overview['object_totals']['queues']
+metrics['total_exhanges'] = overview['object_totals']['exchanges']
+metrics['total_connections'] = overview['object_totals']['connections']
+metrics['total_channels'] = overview['object_totals']['channels']
+
+perf_data = "OK | "
+for k, v in metrics.iteritems():
+    perf_data += "%s=%s;;;; " % (k, v)
+
+print perf_data
 
 
-options = getOptions()
 
-url = "http://%s:%s/api/queues/%%2f/%s" % (options.host, options.port, options.queue)
-
-# handle HTTP Auth
-password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
-top_level_url = url
-password_mgr.add_password(None, top_level_url, options.username, options.password)
-handler = urllib2.HTTPBasicAuthHandler(password_mgr)
-opener = urllib2.build_opener(handler)
-
-response = None
-try:
-    request = opener.open(url)
-    response = request.read()
-    request.close()
-except urllib2.HTTPError, e:
-    print "Error code %s hitting %s" % (e.code, url)
-    exit(1)
-
-data = json.loads(response)
-
-#pp = pprint.PrettyPrinter(indent=4)
-#pp.pprint(data)
-
-num_messages = data.get("messages")
-if num_messages > options.crit_queue or num_messages > options.warn_queue:
-    print "%s messages in %s queue" % (num_messages, options.queue)
-    exit(1 if num_messages > options.crit_queue else 2)
-
-message_stats = data.get("message_stats")
-deliver_details = message_stats.get("deliver_get_details")
-rate = deliver_details.get("rate")
-
-print "OK | messages=%s;;;; rate=%s;;;;" % (num_messages, rate)
