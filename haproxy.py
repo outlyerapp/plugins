@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import sys
+import re
 import socket
 
 try:
@@ -18,6 +19,10 @@ data = {}
 headerlist = []
 blist = []
 flist = []
+
+_digits = re.compile('\d')
+def contains_digits(d):
+    return bool(_digits.search(d))
 
 for line in stats:
     if 'pxname' in line:
@@ -46,14 +51,14 @@ for k, v in data.iteritems():
         p = 0
         for header in headerlist:
             metric_path = "%s.%s" % (k, header)
-            if len(v[p]) > 0:
+            if contains_digits(v[p]):
                 perf_data[metric_path] = v[p]
             p += 1
     if 'frontend' in k:
         p = 0
         for header in headerlist:
             metric_path = "%s.%s" % (k, header)
-            if len(v[p]) > 0:
+            if contains_digits(v[p]):
                 perf_data[metric_path] = v[p]
             p += 1
 
