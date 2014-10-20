@@ -1,59 +1,65 @@
 #!/usr/bin/env python
-
 import sys
-import urllib2
-from optparse import OptionParser
+import socket
 
-URL = "http://localhost"
+try:
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    s.connect("/var/log/haproxy/stats.sock")
+    s.send('show stat \n')
+    data = s.recv(1024)
+    s.close()
+except:
+    print "connection failure"
+    sys.exit(2)
 
-# Nagios exit codes
-UNKNOWN = -1
-OK = 0
-WARNING = 1
-CRITICAL = 2
+stats = data.split()
 
-parser = OptionParser()
-parser.add_option('-u', '--url', default=URL, dest='url')
+data = {}
+headerlist = []
+blist = []
+flist = []
 
-options, args = parser.parse_args()
+for line in stats:
+    if 'pxname' in line:
+        headers = line.split(',')
+        for header in headers:
+            headerlist.append(header)
+        data['headers'] = headerlist
 
-if not getattr(options, 'url'):
-    print 'CRITICAL - %s not specified' % options.url
-    sys.exit(CRITICAL)
+    if 'BACKEND' in line:
+        stat = line.split(',')
+        for item in stat:
+            blist.append(item)
+        name = 'backend.' + blist[0]
+        data[name] = blist
 
-address = options.url+"/haproxy?stats;csv"
+    if 'FRONTEND' in line:
+        stat = line.split(',')
+        for item in stat:
+            flist.append(item)
+        name = 'frontend.' + flist[0]
+        data[name] = flist
 
-conn = urllib2.urlopen(address)
-stats = conn.read()
-conn.close()
+perf_data = {}
+for k, v in data.iteritems():
+    if 'backend' in k:
+        p = 0
+        for header in headerlist:
+            metric_path = "%s.%s" % (k, header)
+            if len(v[p]) > 0:
+                perf_data[metric_path] = v[p]
+            p += 1
+    if 'frontend' in k:
+        p = 0
+        for header in headerlist:
+            metric_path = "%s.%s" % (k, header)
+            if len(v[p]) > 0:
+                perf_data[metric_path] = v[p]
+            p += 1
 
-row = [[]]
-field = ""
-j = 0
+output = "OK | "
+for k, v in perf_data.iteritems():
+    output += "%s=%s;;;; " % (k, v)
 
-for i in stats:
-    if i == "\n":
-        j += 1
-        row.append([])
-    elif i == ",":
-        row[j].append(field)
-        field = ""
-    else:
-        field += i
-
-print "number of connections: %s :: Monitored: %s %s %s/%s  %s %s %s/%s" % (row[1][4],
-                                                                            row[6][0],
-                                                                            row[6][17],
-                                                                            row[6][18],
-                                                                            row[6][19],
-                                                                            row[9][0],
-                                                                            row[9][17],
-                                                                            row[9][18],
-                                                                            row[9][19])
-total = 0
-if total < 12:
-    sys.exit(OK)
-elif 12 < total < 18:
-    sys.exit(WARNING)
-else:
-    sys.exit(CRITICAL)
+print output
+sys.exit(0)
