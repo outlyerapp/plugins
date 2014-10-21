@@ -3,11 +3,20 @@ import sys
 import re
 import socket
 
+"""
+Requirements:
+
+Add the following line to haproxy.cfg under the global section (and restart haproxy):
+
+stats socket /var/lib/haproxy/stats.sock level admin
+
+"""
+
 try:
     s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    s.connect("/var/log/haproxy/stats.sock")
+    s.connect("/var/lib/haproxy/stats.sock")
     s.send('show stat \n')
-    data = s.recv(1024)
+    data = s.recv(32768)
     s.close()
 except:
     print "connection failure"
@@ -21,6 +30,8 @@ blist = []
 flist = []
 
 _digits = re.compile('\d')
+
+
 def contains_digits(d):
     return bool(_digits.search(d))
 
