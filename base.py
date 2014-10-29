@@ -94,8 +94,14 @@ def check_net():
     time.sleep(space_apart)
     rx_after = psutil.net_io_counters().bytes_recv
     sx_after = psutil.net_io_counters().bytes_sent
-    rx = "%dKps" % (((rx_after - rx_before) / 1024) / space_apart)
-    sx = "%dKps" % (((sx_after - sx_before) / 1024) / space_apart)
+    if rx_after or rx_before > 0:
+        rx = "%dKps" % (((rx_after - rx_before) / 1024) / space_apart)
+    else:
+        rx = ""
+    if sx_after or sx_before > 0:
+        sx = "%dKps" % (((sx_after - sx_before) / 1024) / space_apart)
+    else:
+        sx = ""
     net = dict(net_download=rx, net_upload=sx)
     return net
 
@@ -122,11 +128,11 @@ def main():
     result = {}
     for d in dicts:
         for k, v in d.iteritems():
-
-            if "critical" in v or "warning" in v:
-                result[k] = v
-            else:
-                perf += "%s=%s;;;; " % (k, v)
+            if v:
+                if "critical" in v or "warning" in v:
+                    result[k] = v
+                else:
+                    perf += "%s=%s;;;; " % (k, v)
 
     error_message = ""
     for v in result.itervalues():
@@ -150,3 +156,4 @@ def main():
     sys.exit(0)
 
 main()
+
