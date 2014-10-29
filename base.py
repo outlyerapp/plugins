@@ -26,6 +26,12 @@ parser.add_argument('-c', '--cpu', metavar='cpu', action="store",
                     default="%d,%d" % (CPU_WARN, CPU_CRIT), nargs=2, help='<warning> <critical>')
 args = parser.parse_args()
 
+def get_counter_increment(before, after):
+    value = after - before
+    if value > 0: return value
+    for boundry in [1<<16, 1<<32, 1<<64]:
+        if (value + boundry) > 0:
+            return value + boundry
 
 def check_disks():
     """returns a dict of mount point : % used"""
@@ -94,14 +100,8 @@ def check_net():
     time.sleep(space_apart)
     rx_after = psutil.net_io_counters().bytes_recv
     sx_after = psutil.net_io_counters().bytes_sent
-    if rx_after or rx_before > 0:
-        rx = "%dKps" % (((rx_after - rx_before) / 1024) / space_apart)
-    else:
-        rx = ""
-    if sx_after or sx_before > 0:
-        sx = "%dKps" % (((sx_after - sx_before) / 1024) / space_apart)
-    else:
-        sx = ""
+    rx = "%dKps" % ((get_counter_increment(rx_before, rx_after) / 1024) / space_apart)
+    sx = "%dKps" % ((get_counter_increment(sx_before, sx_after) / 1024) / space_apart)
     net = dict(net_download=rx, net_upload=sx)
     return net
 
@@ -156,4 +156,3 @@ def main():
     sys.exit(0)
 
 main()
-
