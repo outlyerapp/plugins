@@ -49,7 +49,7 @@ try:
 
     all_stats = dict(es_stats.items() + es_health.items())
 
-    print all_stats
+    #print all_stats
 
     perf_data = "OK | "
     for k, v in all_stats.iteritems():
