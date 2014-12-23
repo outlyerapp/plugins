@@ -10,8 +10,8 @@ TODO: clean up some of the kv pairs coming back and exclude the non-numeric
 values (some come back as mb and have a byte equiv key
 """
 
-
 HOST = 'localhost'
+
 PORT = 9200
 
 BASE_URL = "http://%s:%s" % (HOST, PORT)
@@ -47,15 +47,15 @@ try:
     es_stats = flatten(_get_es_stats(BASE_URL + NODES_URL))
     es_health = flatten(_get_es_stats(BASE_URL + HEALTH_URL))
 
-    all_stats = dict(es_stats.items() + es_health.items())
-
-    #print all_stats
-
     perf_data = "OK | "
-    for k, v in all_stats.iteritems():
+    for k, v in es_stats.iteritems():
         if str(v)[0].isdigit():
             k = k.rsplit('.')[2::]
             perf_data += '.'.join(k) + '=' + str(v) + ';;;; '
+            
+    for k, v in es_health.iteritems():
+        if str(v)[0].isdigit():
+            perf_data += str(k) + "=" + str(v) + ';;;; '
 
     print(perf_data)
     sys.exit(0)
@@ -63,3 +63,4 @@ try:
 except Exception as e:
     print("Exception: " + str(e))
     sys.exit(2)
+
