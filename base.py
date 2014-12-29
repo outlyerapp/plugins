@@ -17,16 +17,9 @@ CPU_WARN = 100
 DISK_CRIT = 98
 DISK_WARN = 95
 
-parser = argparse.ArgumentParser(description='Dataloop Base Plugin')
-parser.add_argument('-d', '--disk', metavar='disk', action="store",
-                    default="%d,%d" % (DISK_WARN, DISK_CRIT), nargs=2, help='<warning> <critical>')
-parser.add_argument('-m', '--memory', metavar='memory', action="store",
-                    default="%d,%d" % (MEMORY_WARN, MEMORY_CRIT), nargs=2, help='<warning> <critical>')
-parser.add_argument('-c', '--cpu', metavar='cpu', action="store",
-                    default="%d,%d" % (CPU_WARN, CPU_CRIT), nargs=2, help='<warning> <critical>')
-args = parser.parse_args()
 
-def get_counter_increment(before, after):
+def _get_counter_increment(before, after):
+    """ function to calculate network counters """  
     value = after - before
     if value > 0: return value
     for boundry in [1<<16, 1<<32, 1<<64]:
@@ -100,8 +93,8 @@ def check_net():
     time.sleep(space_apart)
     rx_after = psutil.net_io_counters().bytes_recv
     sx_after = psutil.net_io_counters().bytes_sent
-    rx = "%dKps" % ((get_counter_increment(rx_before, rx_after) / 1024) / space_apart)
-    sx = "%dKps" % ((get_counter_increment(sx_before, sx_after) / 1024) / space_apart)
+    rx = "%dKps" % ((_get_counter_increment(rx_before, rx_after) / 1024) / space_apart)
+    sx = "%dKps" % ((_get_counter_increment(sx_before, sx_after) / 1024) / space_apart)
     net = dict(net_download=rx, net_upload=sx)
     return net
 
