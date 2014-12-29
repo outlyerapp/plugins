@@ -116,7 +116,8 @@ def check_load():
 def check_netio():
     """returns a dict of net io counters : value"""
     try:
-        return psutil.net_io_counters()._asdict()
+        netio = psutil.net_io_counters()._asdict()
+        return dict(("network." + k, v) for k,v in netio.items())
 
     except:
         return {} 
@@ -125,14 +126,37 @@ def check_netio():
 def check_cputime():
     """ returns a dict of cpu type : value """
     try:
-        return psutil.cpu_times()._asdict()
+        cputime = psutil.cpu_times()._asdict()
+        return dict(("cpu." + k, v) for k,v in cputime.items())
 
     except:
         return {}
 
+def check_diskio():
+    try:
+        diskio = psutil.disk_io_counters()._asdict()
+        return dict(("disk." + k, v) for k,v in diskio.items())
+    except:
+        {}
+
+def check_virtmem():
+    try:
+        virtmem = psutil.virtual_memory()._asdict()
+        return dict(("vmem." + k, v) for k,v in virtmem.items())
+    except:
+        {}
+
+def check_ctxswitch():
+    try:
+        proc = psutil.Process(os.getpid())
+        ctx_switch = proc.get_num_ctx_switches()._asdict()
+        return dict(("ctx-switch." + k, v) for k,v in ctx_switch.items())
+    except:
+        {}
+
 def main():
 
-    dicts = [check_disks(), check_memory(), check_cpu(), check_net(), check_load(), check_netio(), check_cputime()]
+    dicts = [check_disks(), check_memory(), check_cpu(), check_net(), check_load(), check_netio(), check_cputime(), check_diskio(), check_virtmem(), check_ctxswitch()]
 
     perf = ""
     result = {}
