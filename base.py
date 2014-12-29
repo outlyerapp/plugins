@@ -120,28 +120,56 @@ def check_load():
     except:
         return {}
 
+def check_netio():
+    """returns a dict of net io counters : value"""
+    try:
+        raw_data = psutil.net_io_counters()
+        net_io = {}
+        net_io['bytes_sent'] = raw_data.bytes_sent
+        net_io['bytes_recv'] = raw_data.bytes_recv
+        net_io['packets_sent'] = raw_data.packets_sent
+        net_io['packets_recv'] = raw_data.packets_recv
+        net_io['errors_in'] = raw_data.errin
+        net_io['errors_out'] = raw_data.errout
+        net_io['drop_in'] = raw_data.dropin
+        net_io['drop_out'] = raw_data.dropout
+        return net_io
+
+    except:
+        return {} 
+
+
+def check_cputime():
+    """ returns a dict of cpu type : value """
+    try:
+        proc = psutil.Process(os.getpid())
+        return proc.get_cpu_times()._asdict()
+
+    except:
+        return {}
+
 def main():
 
-    dicts = [check_disks(), check_memory(), check_cpu(), check_net(), check_load()]
+    dicts = [check_disks(), check_memory(), check_cpu(), check_net(), check_load(), check_netio(), check_cputime()]
 
     perf = ""
     result = {}
     for d in dicts:
         for k, v in d.iteritems():
             if v:
-                if "critical" in v or "warning" in v:
+                if "critical" in str(v) or "warning" in str(v):
                     result[k] = v
                 else:
                     perf += "%s=%s;;;; " % (k, v)
 
     error_message = ""
     for v in result.itervalues():
-        if "critical" in v:
+        if "critical" in str(v):
             error_message += v
 
     warning_message = ""
     for v in result.itervalues():
-        if "warning" in v:
+        if "warning" in str(v):
             warning_message += v
 
     if len(error_message) > 0:
