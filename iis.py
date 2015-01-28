@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import subprocess
 import sys
+import re
 
 """
 Replace _Total in the counters list below to get metrics for a specific site. E.g. Default Web Site.
@@ -22,14 +23,15 @@ try:
 except:
     print "connection failure"
     sys.exit(2)
-
-perf_data = { 'current_connections': output.splitlines()[2].split(',')[1].replace('"','').strip(),
-              'current_anon_users': output.splitlines()[2].split(',')[2].replace('"','').strip(),
-              'current_non_anon_users': output.splitlines()[2].split(',')[3].replace('"','').strip(),
-              'get_requests_sec': output.splitlines()[2].split(',')[4].replace('"','').strip(),
-              'put_requests_sec': output.splitlines()[2].split(',')[5].replace('"','').strip(),
-              'post_requests_sec': output.splitlines()[2].split(',')[6].replace('"','').strip()
-              }
+    
+perf_data = {}
+i = 1
+for counter in counters:
+    metric = counter.split('\\')[2].lower()
+    metric = re.sub('[^0-9a-zA-Z]+', '_', metric)
+    value = output.splitlines()[2].split(',')[i].replace('"','').strip()
+    perf_data[metric] = value
+    i += 1
 
 response = "OK | "
 for k, v in perf_data.iteritems():
