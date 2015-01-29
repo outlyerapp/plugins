@@ -61,7 +61,7 @@ def _get_counter_increment(before, after):
     """ function to calculate network counters """
 
     value = after - before
-    if value > 0: return value
+    if value >= 0: return value
     for boundary in [1<<16, 1<<32, 1<<64]:
         if (value + boundary) > 0:
             return value + boundary
@@ -115,8 +115,8 @@ def check_netio():
 def check_cputime():
     """ returns a dict of cpu type : value """
     try:
-        cputime = psutil.cpu_times()._asdict()
-        return dict(("cpu." + k, v) for k,v in cputime.items())
+        cputime = psutil.cpu_times_percent()._asdict()
+        return dict(("cpu." + k, "%d%%" % v) for k,v in cputime.items())
 
     except:
         return {}
