@@ -3,12 +3,24 @@ import subprocess
 import sys
 import re
 
-counters = ['\SQLServer:Buffer Manager\Buffer cache hit ratio ',
+
+counters = ['\SQLServer:Access Methods\FreeSpace Scans/sec',
+            '\SQLServer:Access Methods\Full Scans/sec',
+            '\SQLServer:Buffer Manager\Buffer cache hit ratio',
+            '\SQLServer:Buffer Manager\Free pages',
             '\SQLServer:Buffer Manager\Page life expectancy',
-            '\SQLServer:General Statistics\User Connections',
-            '\SQLServer:Memory Manager\Memory Grants Pending' 
-            ]
-            
+            '\SQLServer:Latches\Total Latch Wait Time (ms)',
+            '\SQLServer:Locks(*)\Lock Timeouts/sec',
+            '\SQLServer:Locks(*)\Lock Wait Time (ms)',
+            '\SQLServer:Locks(*)\Number of Deadlocks/sec',
+            '\SQLServer:Memory Manager\Memory Grants Pending',
+            '\SQLServer:Memory Manager\Target Server Memory (KB)',
+            '\SQLServer:Memory Manager\Total Server Memory (KB)',
+            '\SQLServer:SQL Statistics\Batch Requests/sec',
+            '\SQLServer:SQL Statistics\SQL Re-Compilations/sec',
+            '\SQLServer:SQL Statistics\SQL Compilations/sec',
+            '\SQLServer:General Statistics\User Connections']
+
 command = [r'c:\windows\system32\typeperf.exe', '-sc', '1']
 
 try:
