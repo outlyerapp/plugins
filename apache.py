@@ -21,7 +21,8 @@ URL = "http://%s:%s/server-status?auto" % (HOST, PORT)
 excludes = ['scoreboard', 'uptime']
 
 try:
-    resp = requests.get(URL).text.split('\n')
+    resp = requests.get(URL).content.split('\n')
+    print resp
 except:
     print "connection failed"
     sys.exit(2)
@@ -31,9 +32,9 @@ result = "OK | "
 for metric in resp:
     if len(metric) > 0:
         key = metric.split(':')[0].replace(' ', '.').lower().strip()
-        value = metric.split(':')[1].strip()
         if not any(x in key for x in excludes):
-            result += key + "=" + value + ";;;; "
+            value = float(metric.split(':')[1].strip())
+            result += key + "=" + str(value) + ";;;; "
 
 print result
 sys.exit(0)
