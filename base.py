@@ -124,18 +124,40 @@ def check_cputime():
 
 def check_diskio():
     try:
+        DM = False
         disk_map = {}
-        
+
+        # total io counters
         diskio_all = psutil.disk_io_counters()
         for k, v in diskio_all._asdict().iteritems():
             disk_map["disk." + k] = v
         
+        # per disk io counters
         diskio_per_disk = psutil.disk_io_counters(perdisk=True)
         for device, details in diskio_per_disk.iteritems():
             for k, v in diskio_per_disk[device]._asdict().iteritems():
                 disk_map["disk." + device + "." + k] = v
+        
+        # check for any device mapper partitions
+        for partition in psutil.disk_partitions():
+            if '/dev/mapper' in partition.device:
+                DM = True
+        
+        # per device mapper friendly name io counters
+        if DM:
+            device_mapper = {}
+            for name in os.listdir('/dev/mapper'):
+                path = os.path.join('/dev/mapper', name)
+                if os.path.islink(path):
+                    device_mapper[os.readlink(os.path.join('/dev/mapper', name)).replace('../', '')] = name
+            
+            for device, details in diskio_per_disk.iteritems():
+                for k, v in diskio_per_disk[device]._asdict().iteritems():
+                    if device in device_mapper:
+                        disk_map["disk." + device_mapper[device] + "." + k] = v
+        
         return disk_map
-    
+        
     except:
         {}
 
