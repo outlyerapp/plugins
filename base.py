@@ -125,9 +125,14 @@ def check_cputime():
 def check_diskio():
     try:
         disk_map = {}
-        diskio = psutil.disk_io_counters(perdisk=True)
-        for device, details in diskio.iteritems():
-            for k, v in diskio[device]._asdict().iteritems():
+        
+        diskio_all = psutil.disk_io_counters()
+        for k, v in diskio_all._asdict().iteritems():
+            disk_map["disk." + k] = v
+        
+        diskio_per_disk = psutil.disk_io_counters(perdisk=True)
+        for device, details in diskio_per_disk.iteritems():
+            for k, v in diskio_per_disk[device]._asdict().iteritems():
                 disk_map["disk." + device + "." + k] = v
         return disk_map
     
