@@ -105,8 +105,20 @@ def check_load():
 def check_netio():
     """returns a dict of net io counters : value"""
     try:
-        netio = psutil.net_io_counters()._asdict()
-        return dict(("network." + k, v) for k,v in netio.items())
+        net_map = {}
+        
+        # total net counters
+        net_all = psutil.net_io_counters()._asdict()
+        for k, v in net_all.iteritems():
+            net_map['network.'+ k] = v
+        
+        # per net io counters
+        net_per_nic = psutil.net_io_counters(pernic=True)
+        for device, details in net_per_nic.iteritems():
+            for k, v in net_per_nic[device]._asdict().iteritems():
+                net_map["network." + device + "." + k] = v
+        
+        return net_map
 
     except:
         return {} 
