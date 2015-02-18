@@ -124,8 +124,13 @@ def check_cputime():
 
 def check_diskio():
     try:
-        diskio = psutil.disk_io_counters()._asdict()
-        return dict(("disk." + k, v) for k,v in diskio.items())
+        disk_map = {}
+        diskio = psutil.disk_io_counters(perdisk=True)
+        for device, details in diskio.iteritems():
+            for k, v in diskio[device]._asdict().iteritems():
+                disk_map["disk." + device + "." + k] = v
+        return disk_map
+    
     except:
         {}
 
@@ -151,12 +156,12 @@ def check_ctxswitch():
 
 checks = [
     check_disks,
-    check_memory,
     check_cpu,
+    check_memory,
     check_net,
     check_load,
-    check_netio,
     check_cputime,
+    check_netio,
     check_diskio,
     check_virtmem,
     check_ctxswitch
