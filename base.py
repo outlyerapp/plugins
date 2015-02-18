@@ -115,8 +115,20 @@ def check_netio():
 def check_cputime():
     """ returns a dict of cpu type : value """
     try:
-        cputime = psutil.cpu_times_percent()._asdict()
-        return dict(("cpu." + k, "%d%%" % v) for k,v in cputime.items())
+        cpu_map = {}
+        
+        # total cpu counters
+        cputime_all = psutil.cpu_times_percent()._asdict()
+        for k, v in cputime_all.iteritems():
+            cpu_map['cpu.'+ k] = v
+        
+        # per cpu counters
+        cputime_per_cpu = psutil.cpu_times_percent(percpu=True)
+        for i in range(len(cputime_per_cpu)):
+            for k, v in cputime_per_cpu[i]._asdict().iteritems():
+                cpu_map['cpu.%s.%s' % (i, k)] = v
+        
+        return cpu_map
 
     except:
         return {}
