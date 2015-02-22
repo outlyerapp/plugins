@@ -25,7 +25,7 @@ build_instance = job_instance.get_build(last_build)
 duration = build_instance.get_duration().seconds
 status = build_instance.get_status()
 
-perf_data = "duration=%ss;;;;" % (duration) 
+perf_data = "build_number=%s;;;; duration=%ss;;;;" % (last_build, duration) 
 
 if status == "SUCCESS":
     print "OK | " + perf_data
