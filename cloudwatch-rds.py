@@ -14,8 +14,8 @@ RDS_INSTANCE_ID = ''
 ### Real code
 metrics = {"BinLogDiskUsage": {"type":"float", "value":None, "uom":"B"},
            "CPUUtilization":{"type":"float", "value":None, "uom":"%"},
-           "DatabaseConnections":{"type":"int", "value":None, "uom":None},
-           "DiskQueueDepth":{"type":"int", "value":None, "uom":None},
+           "DatabaseConnections":{"type":"int", "value":None, "uom":""},
+           "DiskQueueDepth":{"type":"int", "value":None, "uom":""},
            "FreeableMemory":{"type":"float", "value":None, "uom":"B"},
            "FreeStorageSpace":{"type":"float", "value":None, "uom":"B"},
            "SwapUsage":{"type":"float", "value":None, "uom":"B"},
@@ -47,7 +47,6 @@ for k,vh in metrics.items():
         sys.exit(1)
     # deal with the metrics returned
     if len(res) > 0:
-        print res
         average = res[-1]["Average"] # last item in result set
         if (k == "FreeStorageSpace" or k == "FreeableMemory"):
             average = average / 1024.0**3.0
