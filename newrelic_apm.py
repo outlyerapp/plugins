@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import requests
+import socket
 import sys
 
 """
@@ -31,12 +32,11 @@ put them at the top of the script and the script should run successfully
 
 NEWRELIC_APIKEY = 'NEW RELIC API KEY'
 NEWRELIC_APPID = 'NEW RELIC APPLICATION ID'
-NEWRELIC_INSTANCEID = 'NEW RELIC INSTANCE ID'
 
 # Main method
 def main():
 
-    url = 'https://api.newrelic.com/v2/applications/{}/instances/{}.json'.format(NEWRELIC_APPID, NEWRELIC_INSTANCEID)
+    url = 'https://api.newrelic.com/v2/applications/{}/instances/{}.json'.format(NEWRELIC_APPID, _get_instance_id())
     data = _make_request(url)
     metrics = data['application_instance']['application_summary']
 
@@ -55,6 +55,23 @@ def main():
         print "Health_Status is {} on New Relic | error_rate={};;;; apdex_score={};;;; throughput={};;;; response_time={};;;;".format(health_status,
                                                                                 error_rate, apdex_score, throughput, response_time)
         sys.exit(2)
+
+
+# Get instance Id for current server running plugin, will exit 2 if instance not found in list
+def _get_instance_id():
+
+    # Get host name of current server so we can match for instance ID
+    url = 'https://api.newrelic.com/v2/applications/{}/instances.json'.format(NEWRELIC_APPID)
+    hostname = socket.gethostname()
+    data = _make_request(url)
+    instances = data['application_instances']
+
+    for instance in instances:
+        if instance['host'] == hostname:
+            return instance['id']
+
+    print "ERROR - Cannot find instance ID for host name " + hostname
+    sys.exit(2)
 
 
 # Makes authenticated request to New Relic REST APIs and return JSON Response
