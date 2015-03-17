@@ -7,7 +7,7 @@ import os
 from datetime import datetime
 
 URL = 'http://127.0.0.1/nginx_status'
-TMPDIR = '/tmp/dataloop/tmp'
+TMPDIR = '/opt/dataloop/tmp'
 TMPFILE = 'dl-nginx.json'
 DATA = {}
 TIMESTAMP = datetime.now().strftime('%s')
