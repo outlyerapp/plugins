@@ -22,7 +22,7 @@ excludes = ['scoreboard', 'uptime']
 
 try:
     resp = requests.get(URL).content.split('\n')
-    print resp
+    #print resp
 except:
     print "connection failed"
     sys.exit(2)
