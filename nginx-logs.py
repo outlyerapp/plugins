@@ -100,8 +100,8 @@ with open(LOGFILE) as fp:
             time_taken = data['request_time']
             if 'min' not in times.iterkeys():
                 times['min'] = time_taken
-                times['count'] += 1
-                times['total'] += float(time_taken)
+            times['count'] += 1
+            times['total'] += float(time_taken)
             if time_taken > times['max']:
                 times['max'] = time_taken
             if time_taken < times['min']:
