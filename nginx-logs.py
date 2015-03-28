@@ -1,21 +1,34 @@
 #!/usr/bin/env python
 
 """
-Reads through an nginx access log file and extracts a count of http status
-codes.
-Calculates the average response time.
-Returns the slowest response time.
+Reads through an nginx access log file and extracts a count of http status codes.
 
-An offset is stored so only new log lines are read and metrics calculated on that
+To enable calculation of response times you need to enable more logging in Nginx. Add this to nginx.conf to the http block:
+
+        log_format timed_combined '$remote_addr - $remote_user [$time_local] '
+                                  '"$request" $status $body_bytes_sent '
+                                  '"$http_referer" "$http_user_agent" '
+                                  '"$request_time"';
+
+Then in your log directives use time_combined. For example:
+
+access_log /var/log/nginx/yourdomain.com.access.log timed_combined;
+
 """
 
 import re
 import os
 import sys
+import re
 
 TMPDIR = '/opt/dataloop/tmp'
-TMPFILE = 'dl-nginx-metrics'
+
+## Change these two variables if you are duplicating this script. Otherwise you will overwrite the filepointer held in the tmpfile.
+TMPFILE = 'dl-nginx-access'
 LOGFILE = '/var/log/nginx/access.log'
+
+combined = '$remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent"'
+timed_combined = '$remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" "$request_time"'
 
 status_codes={'2xx': 0,
               '3xx': 0,
@@ -34,7 +47,6 @@ def tmp_file():
     if not os.path.isfile(TMPDIR + '/' + TMPFILE):
         os.mknod(TMPDIR + '/' + TMPFILE)
 
-
 def get_offset():
     with open(TMPDIR + '/' + TMPFILE, 'r') as off:
         try:
@@ -52,7 +64,7 @@ def write_offset(offset):
 tmp_file()
 
 # Get the last know log file read position
-# to mitigate logrotation, if the file is smaller than offset, read the whol
+# to mitigate logrotation, if the file is smaller than offset, read the whole
 # log file again
 position = get_offset()
 file_size = os.stat(LOGFILE).st_size
@@ -60,42 +72,43 @@ if file_size < position:
     position = 0
 
 with open(LOGFILE) as fp:
-
     if position > 0:
         fp.seek(position)
 
     for line in fp.xreadlines():
+        regex = ''.join('(?P<' + g + '>.*?)' if g else re.escape(c) for g, c in re.findall(r'\$(\w+)|(.)', timed_combined))
+        m = re.match(regex, line)
+        if not m:
+            regex = ''.join('(?P<' + g + '>.*?)' if g else re.escape(c) for g, c in re.findall(r'\$(\w+)|(.)', combined))
+            m = re.match(regex, line)
+        data = m.groupdict()
 
-        code = line.split(' ')[8]
-        if re.match('^[0-9]', code):
-            if code not in status_codes.keys():
-                status_codes[code] = 1
-            else:
-                status_codes[code] += 1
-            if code.startswith('2'):
-                status_codes['2xx'] += 1
-            if code.startswith('3'):
-                status_codes['3xx'] += 1
-            if code.startswith('4'):
-                status_codes['4xx'] += 1
-            if code.startswith('5'):
-                status_codes['5xx'] += 1                
-
-
-        time_taken = line.split(' ')[9]
-        if re.match('^[0-9]', time_taken):
+        code = data['status']
+        if code not in status_codes.keys():
+            status_codes[code] = 1
+        else:
+            status_codes[code] += 1
+        if code.startswith('2'):
+            status_codes['2xx'] += 1
+        if code.startswith('3'):
+            status_codes['3xx'] += 1
+        if code.startswith('4'):
+            status_codes['4xx'] += 1
+        if code.startswith('5'):
+            status_codes['5xx'] += 1                
+        if 'request_time' in data.iterkeys():
+            time_taken = data['request_time']
             if 'min' not in times.iterkeys():
-                times['min'] = int(time_taken)
-            times['count'] += 1
-            times['total'] += int(time_taken)
-            if int(time_taken) > int(times['max']):
-                times['max'] = int(time_taken)
-            if int(time_taken) < int(times['min']):
-                times['min'] = int(time_taken)
+                times['min'] = time_taken
+                times['count'] += 1
+                times['total'] += float(time_taken)
+            if time_taken > times['max']:
+                times['max'] = time_taken
+            if time_taken < times['min']:
+                times['min'] = time_taken
 
     write_offset(fp.tell())
     fp.close()
-
 
 # emit lots of lovely metrics:
 message = "OK | "
@@ -103,9 +116,10 @@ for k,v in status_codes.iteritems():
     message += "%s=%s;;;; " % (k,v)
 
 if times['count'] > 0:
-    message += "avg_time=%sms;;;; " % (int(times['total'])/int(times['count']))
+    message += "avg_time=%0.2fms;;;; " % (float(times['total'])/float(times['count']))
 
-message += "max_time=%sms;;;; min_time=%sms;;;;" % (times['max'], times['min'])
+if 'request_time' in data.iterkeys():
+    message += "max_time=%0.2fms;;;; min_time=%0.2fms;;;;" % (float(times['max']), float(times['min']))
 
 print message
 sys.exit(0)
