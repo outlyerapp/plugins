@@ -54,9 +54,9 @@ def time_prettyfy(secs):
 
 def optionsparser():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-w", "--warn", dest="warning", type=int, default=1200,
+    parser.add_argument("-w", "--warn", dest="warn", type=int, default=1200,
                         help="seconds after last Puppet run which issues a warning")
-    parser.add_argument("-c", "--crit", type=int, dest="critical", default=2700,
+    parser.add_argument("-c", "--crit", type=int, dest="crit", default=2700,
                         help="seconds after last Puppet run which are critical")
     arguments = parser.parse_args()
 
