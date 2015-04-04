@@ -21,9 +21,9 @@ def check_disks():
                 continue
 
             usage = psutil.disk_usage(partition.mountpoint)
-            disk = re.sub(" ", "_", partition.mountpoint)
-            disk_usage[disk] = "%d%%" % int(usage.percent)
-
+            disk = re.sub(" ", "_", partition.mountpoint).replace(':', '').replace('\\', '').lower()
+            disk_usage['disk.' + disk + '.percent_used'] = "%d%%" % int(usage.percent)
+            disk_usage['disk.' + disk + '.percent_free'] = "%d%%" % int(100 - usage.percent)
         return disk_usage
 
     except OSError:
@@ -88,16 +88,21 @@ def check_net():
 
 def check_load():
     """returns a dict of load num : value"""
-
+    load_avg = {}
     try:
-        load = os.getloadavg()
-        load_avg = {}
-        load_avg['load_1_min'] = str(load[0])
-        load_avg['load_5_min'] = str(load[1])
-        load_avg['load_15_min'] = str(load[2])
-
+        if os.name == 'nt':
+            import wmi
+            c = wmi.WMI()
+            cpu_queue_length = sum([int(cpu.ProcessorQueueLength) for cpu in c.Win32_PerfRawData_PerfOS_System()])
+            load_avg['load_1_min'] = str(cpu_queue_length)
+        else:
+            load = os.getloadavg()
+            load_avg['load_1_min'] = str(load[0])
+            load_avg['load_5_min'] = str(load[1])
+            load_avg['load_15_min'] = str(load[2])
+            
         return load_avg
-    
+
     except:
         return {}
 
@@ -116,7 +121,7 @@ def check_netio():
         net_per_nic = psutil.net_io_counters(pernic=True)
         for device, details in net_per_nic.iteritems():
             for k, v in net_per_nic[device]._asdict().iteritems():
-                net_map["network." + device + "." + k] = v
+                net_map["network." + device.replace(' ', '_').lower() + "." + k] = v
         
         return net_map
 
@@ -160,7 +165,7 @@ def check_diskio():
         diskio_per_disk = psutil.disk_io_counters(perdisk=True)
         for device, details in diskio_per_disk.iteritems():
             for k, v in diskio_per_disk[device]._asdict().iteritems():
-                disk_map["disk." + device + "." + k] = v
+                disk_map["disk." + device.lower() + "." + k] = v
         
         # check for any device mapper partitions
         for partition in psutil.disk_partitions():
@@ -183,7 +188,7 @@ def check_diskio():
         return disk_map
         
     except:
-        {}
+        return {}
 
 
 def check_virtmem():
@@ -191,7 +196,7 @@ def check_virtmem():
         virtmem = psutil.virtual_memory()._asdict()
         return dict(("vmem." + k, v) for k,v in virtmem.items())
     except:
-        {}
+        return {}
 
 
 def check_ctxswitch():
@@ -200,7 +205,7 @@ def check_ctxswitch():
         ctx_switch = proc.get_num_ctx_switches()._asdict()
         return dict(("ctx-switch." + k, v) for k,v in ctx_switch.items())
     except:
-        {}
+        return {}
 
 
 # Add functions to the list of checks to enable
@@ -230,3 +235,4 @@ output = "OK | "
 for k, v in raw_output.iteritems():
     output += "%s=%s;;;; " % (k, v)
 print output
+
