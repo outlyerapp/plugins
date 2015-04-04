@@ -28,6 +28,9 @@ def check_disks():
             disk = re.sub(" ", "_", partition.mountpoint).replace(':', '').replace('\\', '').lower()
             disk_usage['disk.' + disk + '.percent_used'] = "%d%%" % int(usage.percent)
             disk_usage['disk.' + disk + '.percent_free'] = "%d%%" % int(100 - usage.percent)
+            disk_usage['disk.' + disk + '.free'] = "%s" % _bytes_to_human(usage.free)
+            disk_usage['disk.' + disk + '.used'] = "%s" % _bytes_to_human(usage.used)
+            
         return disk_usage
 
     except OSError:
@@ -70,6 +73,12 @@ def _get_counter_increment(before, after):
         if (value + boundary) > 0:
             return value + boundary
 
+def _bytes_to_human(num):
+    for unit in ['','Kb','Mb','Gb','Tb','Pb','Eb','Zb']:
+        if abs(num) < 1024.0:
+            return "%3.1f%s" % (num, unit)
+        num /= 1024.0
+    return "%.1f%s" % (num, 'Yb')
 
 def check_net():
     """returns a dict of network stats in kps"""
