@@ -180,7 +180,7 @@ def check_diskio():
         
         # per windows volume counters        
         if os.name == 'nt':
-            for disk in c.Win32_PerfRawData_PerfDisk_LogicalDisk():
+            for disk in c.Win32_PerfFormattedData_PerfDisk_LogicalDisk():
                 if len(disk.Name) < 3:
                     ln = disk.Name.replace(':', '').lower()
                     disk_map["disk." + ln + ".reads_per_sec"] = disk.DiskReadsPerSec
