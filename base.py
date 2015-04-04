@@ -5,6 +5,10 @@ import time
 import re
 import psutil
 
+if os.name == 'nt':
+    import wmi
+    c = wmi.WMI()
+
 
 def check_disks():
     """returns a dict of mount point : % used"""
@@ -91,8 +95,6 @@ def check_load():
     load_avg = {}
     try:
         if os.name == 'nt':
-            import wmi
-            c = wmi.WMI()
             cpu_queue_length = sum([int(cpu.ProcessorQueueLength) for cpu in c.Win32_PerfRawData_PerfOS_System()])
             load_avg['load_1_min'] = str(cpu_queue_length)
         else:
@@ -166,6 +168,16 @@ def check_diskio():
         for device, details in diskio_per_disk.iteritems():
             for k, v in diskio_per_disk[device]._asdict().iteritems():
                 disk_map["disk." + device.lower() + "." + k] = v
+        
+        # per windows volume counters        
+        if os.name == 'nt':
+            for disk in c.Win32_PerfRawData_PerfDisk_LogicalDisk():
+                if len(disk.Name) < 3:
+                    ln = disk.Name.replace(':', '').lower()
+                    disk_map["disk." + ln + ".reads_per_sec"] = disk.DiskReadsPerSec
+                    disk_map["disk." + ln + ".writes_per_sec"] = disk.DiskWritesPerSec
+                    disk_map["disk." + ln + ".transfers_per_sec"] = disk.DiskTransfersPerSec
+                    disk_map["disk." + ln + ".current_disk_queue_length"] = disk.CurrentDiskQueueLength
         
         # check for any device mapper partitions
         for partition in psutil.disk_partitions():
