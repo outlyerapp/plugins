@@ -45,7 +45,7 @@ def get_metrics(metrics):
 
             # If no LinkedAccount - this is total charge across all accounts
             if u'LinkedAccount' not in metric.dimensions:
-                stats['total'] = value
+                stats['total.total'] = value
             else:
                 key = "LinkedAccounts.%s.total" % (metric.dimensions[u'LinkedAccount'][0])
                 stats[key] = value
