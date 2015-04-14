@@ -61,7 +61,7 @@ def get_metrics(metrics):
 
     return stats
 
-conn = cloudwatch.connect_to_region(AWS_REGION, aws_access_key_id=AWS_KEY, aws_secret_access_key=AWS_SECRET)
+conn = cloudwatch.connect_to_region(AWS_REGION, aws_access_key_id=AWS_KEY, aws_secret_access_key=AWS_SECRET, validate_certs=False)
 billing_metrics = conn.list_metrics(metric_name=u'EstimatedCharges',namespace=u'AWS/Billing')
 stats = get_metrics(billing_metrics)
 
@@ -72,7 +72,7 @@ for key,value in stats.items():
     message += "%s=%s;;;; " % (key, value)
 
 if message == "OK | ":
-    print "CRITICAL - no rds metrics received"
+    print "CRITICAL - no billing metrics received"
     sys.exit(2)
 else:
     print message
