@@ -69,7 +69,7 @@ stats = get_metrics(billing_metrics)
 message = "OK | "
 
 for key,value in stats.items():
-    message += "%s=%s;;;; " % (key, value)
+    message += "%s=%s$;;;; " % (key, value)
 
 if message == "OK | ":
     print "CRITICAL - no billing metrics received"
