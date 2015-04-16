@@ -23,18 +23,20 @@ def check_disks():
                 continue
             if 'libc.so' in partition.mountpoint:
                 continue
+            try:
+                usage = psutil.disk_usage(partition.mountpoint)
+                disk = re.sub(" ", "_", partition.mountpoint).replace(':', '').replace('\\', '').lower()
+                disk_usage['disk.' + disk + '.percent_used'] = "%d%%" % int(usage.percent)
+                disk_usage['disk.' + disk + '.percent_free'] = "%d%%" % int(100 - usage.percent)
+                disk_usage['disk.' + disk + '.free'] = "%s" % _bytes_to_human(usage.free)
+                disk_usage['disk.' + disk + '.used'] = "%s" % _bytes_to_human(usage.used)
+            except:
+                continue 
 
-            usage = psutil.disk_usage(partition.mountpoint)
-            disk = re.sub(" ", "_", partition.mountpoint).replace(':', '').replace('\\', '').lower()
-            disk_usage['disk.' + disk + '.percent_used'] = "%d%%" % int(usage.percent)
-            disk_usage['disk.' + disk + '.percent_free'] = "%d%%" % int(100 - usage.percent)
-            disk_usage['disk.' + disk + '.free'] = "%s" % _bytes_to_human(usage.free)
-            disk_usage['disk.' + disk + '.used'] = "%s" % _bytes_to_human(usage.used)
-            
         return disk_usage
 
-    except OSError:
-        pass
+    except:
+        return {}
 
 
 def check_memory():
