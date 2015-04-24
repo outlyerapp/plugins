@@ -38,7 +38,7 @@ def write_cache(cache):
 
 def cleanse_cache(cache):
     # keep the cache at a max of 1 hour of data
-    while (int(TIMESTAMP) - int(cache[0]['timestamp'])) >= 3600:
+    while len(cache) > 0 and (int(TIMESTAMP) - int(cache[0]['timestamp'])) >= 3600:
         cache.pop(0)
     # keep the cache list to 120
     while len(cache) >= 120:
