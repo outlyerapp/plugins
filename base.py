@@ -103,6 +103,7 @@ def check_net():
 
 def check_load():
     """returns a dict of load num : value"""
+    cores = psutil.NUM_CPUS
     load_avg = {}
     try:
         if os.name == 'nt':
@@ -113,6 +114,8 @@ def check_load():
             load_avg['load_1_min'] = str(load[0])
             load_avg['load_5_min'] = str(load[1])
             load_avg['load_15_min'] = str(load[2])
+        
+        load_avg['load_fractional'] = float(load_avg['load_1_min']) / int(cores)
             
         return load_avg
 
