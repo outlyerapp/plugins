@@ -3,7 +3,6 @@
 import requests
 import os
 import sys
-import pprint
 from docker import Client
 
 try:
