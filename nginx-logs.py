@@ -116,10 +116,10 @@ for k,v in status_codes.iteritems():
     message += "%s=%s;;;; " % (k,v)
 
 if times['count'] > 0:
-    message += "avg_time=%0.2fms;;;; " % (float(times['total'])/float(times['count']))
+    message += "avg_time=%0.2fs;;;; " % (float(times['total'])/float(times['count']))
 
 if 'request_time' in data.iterkeys():
-    message += "max_time=%0.2fms;;;; min_time=%0.2fms;;;;" % (float(times['max']), float(times['min']))
+    message += "max_time=%0.2fs;;;; min_time=%0.2fs;;;;" % (float(times['max']), float(times['min']))
 
 print message
 sys.exit(0)
