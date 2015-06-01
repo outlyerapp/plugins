@@ -16,7 +16,7 @@ PORT = 9200
 
 BASE_URL = "http://%s:%s" % (HOST, PORT)
 HEALTH_URL = "/_cluster/health"
-NODES_URL = "/_nodes/stats?all=true"
+NODES_URL = "/_nodes/stats?all=true&human"
 
 
 def _get_es_stats(url):
