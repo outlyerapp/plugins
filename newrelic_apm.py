@@ -67,7 +67,7 @@ def _get_instance_id():
     instances = data['application_instances']
 
     for instance in instances:
-        if instance['host'] == hostname:
+        if hostname in instance['host']:
             return instance['id']
 
     print "ERROR - Cannot find instance ID for host name " + hostname
