@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+"""
+Update the MYSQL_USER and MYSQL_PASSWORD variables below.
+"""
 import os
 import re
 import subprocess
@@ -44,7 +48,7 @@ def get_mysql_status():
     try:
         resp = subprocess.check_output(command)
     except:
-        print "connection failure"
+        print "Plugin Failed!"
         sys.exit(2)
     
     metric_list = resp.split('\n')

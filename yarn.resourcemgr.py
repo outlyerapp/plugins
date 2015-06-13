@@ -30,7 +30,7 @@ node_data = {}
 for n in names:
     URL = 'http://%s:8088/jmx?qry=Hadoop:service=ResourceManager,name=%s' % (socket.getfqdn(), n)
     try:
-        resp = requests.get(URL).json()['beans']
+        resp = requests.get(URL, timeout=60).json()['beans']
         for i in range(len(resp)):
             for k, v in resp[i].iteritems():
                 if k.lower() not in excludes:
@@ -48,8 +48,8 @@ for n in names:
                     
         metrics.update(node_data)
     
-    except Exception, e:
-        print "connection failed: %s" % e
+    except:
+        print "Plugin Failed!"
         sys.exit(2)
 
 output = "OK | "

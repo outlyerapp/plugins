@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+"""
+Update the MYSQL_USER and MYSQL_PASSWORD variables below.
+"""
 import subprocess
 import re
 import sys

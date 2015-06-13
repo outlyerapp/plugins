@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+"""
+Update the MYSQL_USER and MYSQL_PASSWORD variables below.
+"""
 import os
 import re
 import subprocess
@@ -13,6 +16,7 @@ MYSQL_PASSWORD = ''
 TIMESTAMP = datetime.now().strftime('%s')
 status = {}
 
+
 def get_mysql_active_connections():
     active_connections = ['/usr/bin/mysql', '-N', '-A', '-s', '-e', "select  user, case count(*) when 1 then 0 else count(*) -1 end \
                     from (select user from information_schema.processlist where state is not null and state !='' union all select distinct user from mysql.user) as users group by user;"]
@@ -24,7 +28,7 @@ def get_mysql_active_connections():
     try:
         resp = subprocess.check_output(active_connections)
     except:
-        print "connection failure"
+        print "Plugin Failed!"
         sys.exit(2)
         
     metric_list = resp.split('\n')
@@ -38,6 +42,7 @@ def get_mysql_active_connections():
             status[k] = v
     return status
 
+
 def get_mysql_all_connections():
     all_connections = ['/usr/bin/mysql', '-N', '-A', '-s', '-e', "select  user, case count(*) when 1 then 0 else count(*) -1 end \
                     from (select user from information_schema.processlist union all select distinct user from mysql.user) as users group by user;"]
@@ -49,7 +54,7 @@ def get_mysql_all_connections():
     try:
         resp = subprocess.check_output(all_connections)
     except:
-        print "connection failure"
+        print "Plugin Failed!"
         sys.exit(2)
     
     metric_list = resp.split('\n')

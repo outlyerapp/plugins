@@ -1,12 +1,12 @@
 #!/usr/bin/env python
-import subprocess
-import sys
-import re
-
 """
 Replace _Total in the counters list below to get metrics for a specific site. E.g. Default Web Site.
 To see your list of sites run 'c:\windows\system32\inetsrv\appcmd.exe list sites' from an elevated cmd prompt
 """
+
+import subprocess
+import sys
+import re
 
 counters = ['\Web Service(_Total)\Current Connections',
             '\Web Service(_Total)\Current Anonymous Users',
@@ -21,7 +21,7 @@ command = [r'c:\windows\system32\typeperf.exe', '-sc', '1']
 try:
     output = subprocess.check_output(command + counters)
 except:
-    print "connection failure"
+    print "Plugin Failed!"
     sys.exit(2)
     
 perf_data = {}

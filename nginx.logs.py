@@ -19,7 +19,6 @@ access_log /var/log/nginx/yourdomain.com.access.log timed_combined;
 import re
 import os
 import sys
-import re
 
 TMPDIR = '/opt/dataloop/tmp'
 
@@ -40,12 +39,14 @@ times['total'] = 0
 times['max'] = 0
 offset = 0
 
+
 def tmp_file():
     # Ensure the dataloop tmp dir is available
     if not os.path.isdir(TMPDIR):
         os.makedirs(TMPDIR)
     if not os.path.isfile(TMPDIR + '/' + TMPFILE):
         os.mknod(TMPDIR + '/' + TMPFILE)
+
 
 def get_offset():
     with open(TMPDIR + '/' + TMPFILE, 'r') as off:
@@ -55,6 +56,7 @@ def get_offset():
             # unable to read offset file
             offset = 0
     return offset
+
 
 def write_offset(offset):
     with open(TMPDIR + '/' + TMPFILE, 'w') as off:
@@ -74,14 +76,18 @@ if file_size < position:
 with open(LOGFILE) as fp:
     if position > 0:
         fp.seek(position)
-
     for line in fp.xreadlines():
         regex = ''.join('(?P<' + g + '>.*?)' if g else re.escape(c) for g, c in re.findall(r'\$(\w+)|(.)', timed_combined))
         m = re.match(regex, line)
         if not m:
             regex = ''.join('(?P<' + g + '>.*?)' if g else re.escape(c) for g, c in re.findall(r'\$(\w+)|(.)', combined))
             m = re.match(regex, line)
-        data = m.groupdict()
+
+        try:
+            data = m.groupdict()
+        except:
+            print "Plugin Failed!"
+            sys.exit(2)
 
         code = data['status']
         if code not in status_codes.keys():

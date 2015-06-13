@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 import socket
 import subprocess
 import sys
@@ -8,6 +7,7 @@ import psutil
 NODE_TOOL = '/usr/local/cassandra-1/bin/nodetool'
 HOST = 'localhost'
 
+
 def is_digit(d):
     try:
         float(d)
@@ -15,12 +15,13 @@ def is_digit(d):
         return False
     return True
 
+
 def get_cfstats():
     try:
         p = subprocess.Popen([NODE_TOOL, "-h", HOST, "cfstats"], stdout=subprocess.PIPE)
         return p.stdout
     except:
-        print "cassandra is down"
+        print "Plugin Failed! Cassandra is down"
         sys.exit(2)
 
 

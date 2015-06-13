@@ -1,8 +1,10 @@
 #!/usr/bin/env python
-
-import os, sys, time
+import os
+import sys
+import time
 import xml.etree.ElementTree as et
-import urllib2, httplib
+import urllib2
+import httplib
 import psutil
 
 HOST = os.environ.get('HOST', "127.0.0.1")
@@ -214,5 +216,5 @@ if bindprocess():
     print output
     sys.exit(0)
 else:
-    print "Bind not running!"
+    print "Plugin Failed! Unable to connect to %s" % BINDSTATS_URL
     sys.exit(2)

@@ -8,7 +8,7 @@ command = "/usr/bin/varnishstat -1 | awk '{print $1,$2}'"
 try:
     status = subprocess.check_output(command, shell=True)
 except:
-    print "connection failure"
+    print "Plugin Failed!"
     sys.exit(2)
 
 output = "OK | "

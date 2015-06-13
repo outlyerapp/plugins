@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-import sys
-import requests
-import re
-
 """
 This plugin expects the apache status page to be available on /server-status?auto
 To enable simply add this block to your httpd.conf:
@@ -13,6 +9,8 @@ To enable simply add this block to your httpd.conf:
 
 For more info including how to make that more secure visit http://httpd.apache.org/docs/2.2/mod/mod_status.html
 """
+import sys
+import requests
 
 HOST = 'localhost'
 PORT = 80
@@ -21,10 +19,9 @@ URL = "http://%s:%s/server-status?auto" % (HOST, PORT)
 excludes = ['scoreboard', 'uptime']
 
 try:
-    resp = requests.get(URL).content.split('\n')
-    #print resp
+    resp = requests.get(URL, timeout=60).content.split('\n')
 except:
-    print "connection failed"
+    print "Plugin Failed! Unable to connect to %s" % URL
     sys.exit(2)
 
 result = "OK | "

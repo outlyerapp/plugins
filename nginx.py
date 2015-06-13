@@ -1,4 +1,15 @@
 #!/usr/bin/env python
+"""
+You need to add following to a nginx site, say example.com, inside server {..} block.
+
+location /nginx_status {
+          stub_status on;
+          access_log   off;
+          allow 127.0.0.1;
+          deny all;
+        }
+"""
+
 import re
 import requests
 import sys
@@ -20,6 +31,7 @@ def tmp_file():
     if not os.path.isfile(TMPDIR + '/' + TMPFILE):
         os.mknod(TMPDIR + '/' + TMPFILE)
 
+
 def get_cache():
     with open(TMPDIR + '/' + TMPFILE, 'r') as json_fp:
         try:
@@ -29,12 +41,14 @@ def get_cache():
             json_data = []
     return json_data
 
+
 def write_cache(cache):
     with open(TMPDIR + '/' + TMPFILE, 'w') as json_fp:
         try:
             json.dump(cache, json_fp)
         except:
             print "unable to write cache file, future rates will be hard to calculate"
+
 
 def cleanse_cache(cache):
     # keep the cache at a max of 1 hour of data
@@ -44,6 +58,7 @@ def cleanse_cache(cache):
     while len(cache) >= 120:
         cache.pop(0)
     return cache
+
 
 def calculate_rates(data_now, json_data, rateme):
     # Assume last value gives up to an hour's worth of stats
@@ -57,11 +72,12 @@ def calculate_rates(data_now, json_data, rateme):
 
         return data_per_second
 
+
 def get_nginx_status():
     try:
-        resp = requests.get(URL)
+        resp = requests.get(URL, timeout=60)
     except:
-        print "connection failed"
+        print "Plugin Failed! Unable to connect to %s" % URL
         sys.exit(2)
 
     data = resp.text
@@ -72,7 +88,7 @@ def get_nginx_status():
     match3 = re.search(r'Reading:\s*(\d+)\s*Writing:\s*(\d+)\s*''Waiting:\s*(\d+)', data)
 
     if not match1 or not match2 or not match3:
-        raise Exception('Unable to parse %s' % URL)
+        print 'Plugin Failed! Unable to parse %s' % URL
         sys.exit(2)
 
     result['connections'] = int(match1.group(1))
@@ -85,14 +101,11 @@ def get_nginx_status():
 
     return result
 
-
-# Flow
-# Ensure the tmp dir and file exist
+# ensure the tmp dir and file exist
 tmp_file()
 
-# Get our cache of data
+# get our cache of data
 json_data = get_cache()
-#print json_data
 if len(json_data) > 0:
     json_data = cleanse_cache(json_data)
 
@@ -109,7 +122,7 @@ dated_result['timestamp'] = TIMESTAMP
 json_data.append(dated_result)
 write_cache(json_data)
 
-# Finally nagios exit with perfdata
+# output metrics
 perf_data = "OK | "
 for k, v in result.iteritems():
     perf_data += "%s=%s;;;; " % (k, v)

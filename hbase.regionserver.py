@@ -14,15 +14,13 @@ node_data = {}
 for s in services:
     URL = 'http://%s:60030/jmx?qry=hadoop:service=%s' % (socket.getfqdn(), s)
     try:
-        resp = requests.get(URL).json()['beans']
+        resp = requests.get(URL, timeout=60).json()['beans']
         for i in range(len(resp)):
             for k, v in resp[i].iteritems():
                 if k.lower() not in excludes:
                     metrics[k] = v
-
-    
-    except Exception, e:
-        print "connection failed: %s" % e
+    except:
+        print "Plugin Failed"
         sys.exit(2)
 
 output = "OK | "

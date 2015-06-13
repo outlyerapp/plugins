@@ -5,14 +5,15 @@ import time
 import re
 import psutil
 
-if os.name == 'nt':
+try:
     import wmi
     c = wmi.WMI()
+except Exception:
+    c = None
 
 
 def check_disks():
     """returns a dict of mount point : % used"""
-
     disk_usage = {}
     try:
         for partition in psutil.disk_partitions(all=False):
@@ -41,7 +42,6 @@ def check_disks():
 
 def check_memory():
     """returns a dict of memory type : % used"""
-
     try:
         memory = "%d%%" % int(psutil.virtual_memory().percent)
         swap = "%d%%" % int(psutil.swap_memory().percent)
@@ -55,9 +55,8 @@ def check_memory():
 
 def check_cpu():
     """returns a dict of cpu type : % used"""
-
     try:
-        cpu = "%d%%" % int(psutil.cpu_percent(interval=5))
+        cpu = "%d%%" % int(psutil.cpu_percent())
         cpu_used = dict(cpu=cpu)
 
         return cpu_used
@@ -68,12 +67,12 @@ def check_cpu():
 
 def _get_counter_increment(before, after):
     """ function to calculate network counters """
-
     value = after - before
     if value >= 0: return value
     for boundary in [1<<16, 1<<32, 1<<64]:
         if (value + boundary) > 0:
             return value + boundary
+
 
 def _bytes_to_human(num):
     for unit in ['','Kb','Mb','Gb','Tb','Pb','Eb','Zb']:
@@ -81,6 +80,7 @@ def _bytes_to_human(num):
             return "%3.1f%s" % (num, unit)
         num /= 1024.0
     return "%.1f%s" % (num, 'Yb')
+
 
 def check_net():
     """returns a dict of network stats in kps"""
@@ -235,7 +235,6 @@ def check_ctxswitch():
 
 
 # Add functions to the list of checks to enable
-
 checks = [
     check_disks,
     check_cpu,
@@ -250,13 +249,11 @@ checks = [
 ]
 
 # Compose big dict of all check output
-
 raw_output = {}
 for check in checks:
     raw_output.update(check())
 
 # Output in Nagios format
-
 output = "OK | "
 for k, v in raw_output.iteritems():
     output += "%s=%s;;;; " % (k, v)

@@ -25,7 +25,7 @@ PORT = 6000
 metrics = {}
 try:
     for URI in URIS:
-        resp = requests.get('http://localhost:%d/recon/%s' % (PORT, URI)).json()
+        resp = requests.get('http://localhost:%d/recon/%s' % (PORT, URI), timeout=60).json()
         if isinstance(resp, dict):
             for k, v in resp.iteritems():
                 metrics[URI + '.' + k.lower().replace('(', '_').replace(')', '')] = v
@@ -36,7 +36,7 @@ try:
                     metrics[URI + '.' + i['device'] + '.size'] = i['size']
                     metrics[URI + '.' + i['device'] + '.avail'] = i['avail']
 except Exception:
-    print "connection failed"
+    print "Plugin Failed! Unable to connect to http://localhost:%d/recon/%s" % (PORT, URI)
     sys.exit(2)
 
 output = "OK | "

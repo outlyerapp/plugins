@@ -1,23 +1,31 @@
 #!/usr/bin/python
+
+"""
+Update the settings block below
+"""
+
+import sys
 import requests
 
+# Settings
 HOST = "localhost"
 QUEUES = [""]
 QUEUES_VHOST = '%%2f'
 USERNAME = "guest"
 PASSWORD = "guest"
 PORT = "15672"
-
-
 URL = "http://%s:%s/api/overview" % (HOST, PORT)
-
 
 def get_data(url):
     r = requests.get(url, auth=(USERNAME, PASSWORD))
     return r.json()
 
 # Get overview stats
-overview = get_data("http://%s:%s/api/overview" % (HOST, PORT))
+try:
+    overview = get_data("http://%s:%s/api/overview" % (HOST, PORT))
+except:
+    print "Plugin Failed! Unable to connect to http://%s:%s/api/overview" % (HOST, PORT)
+    sys.exit(2)
 
 metrics = {}
 
@@ -51,4 +59,5 @@ for k, v in metrics.iteritems():
     perf_data += "%s=%s;;;; " % (k, v)
 
 print perf_data
+sys.exit(0)
 

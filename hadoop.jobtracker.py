@@ -26,7 +26,7 @@ sum_data = {}
 for n in names:
     URL = 'http://%s:50030/jmx?qry=hadoop:service=JobTracker,name=%s' % (socket.getfqdn(), n)
     try:
-        resp = requests.get(URL).json()['beans']
+        resp = requests.get(URL, timeout=60).json()['beans']
         
         # Get all of the top level metrics
         for i in range(len(resp)):
@@ -56,8 +56,8 @@ for n in names:
         
         metrics.update(sum_data)
    
-    except Exception, e:
-        print "connection failed: %s" % e
+    except:
+        print "Plugin Failed!"
         sys.exit(2)
 
 output = "OK | "

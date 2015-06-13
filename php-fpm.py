@@ -1,10 +1,5 @@
 #!/usr/bin/env python
-
-import sys
-import requests
-
-""" This script requires some configuration.
-
+"""
 1. edit /etc/php5/fpm/pool.d/www.conf and uncomment pm.status_path to enable it
 
 2. add the following block to nginx
@@ -19,6 +14,8 @@ location ~ ^/(www-status)$ {
 
 3. restart nginx and php-fpm
 """
+import sys
+import requests
 
 HOST = 'localhost'
 PORT = 80
@@ -27,9 +24,9 @@ URL = "http://%s:%s/www-status" % (HOST, PORT)
 excludes = ['pool', 'process_manager', 'start_time']
 
 try:
-    resp = requests.get(URL).content.split('\n')
+    resp = requests.get(URL, timeout=60).content.split('\n')
 except:
-    print "connection failed"
+    print "Plugin Failed!"
     sys.exit(2)
 
 result = "OK | "

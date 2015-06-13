@@ -1,15 +1,20 @@
 #!/usr/bin/env python
+
+"""
+Update the settings block below
+"""
+
 import psycopg2
 import psycopg2.extras
 import functools
 import time
+import sys
 
-'''Set the variables directly below. That is all.'''
-
-HOST = ''
-PORT = ''
+# Settings
+HOST = 'localhost'
+PORT = '5432'
 DB = ''
-USER = ''
+USER = 'postgres'
 PASSWORD = ''
 
 # Cache for postgres query values, this prevents opening db connections for each metric_handler callback
@@ -213,7 +218,14 @@ def metric_init(params):
 
 descriptors = metric_init({"host":"hostname_goes_here","port":"port_goes_here","dbname":"database_name_goes_here","username":"username_goes_here","password":"password_goes_here"})
 message = "OK | "
-for d in descriptors:
-    v = d['call_back'](d['name'])
-    message += str(d['name'].lower()) + '=' + str(v) + ';;;; '
+
+try:
+    for d in descriptors:
+        v = d['call_back'](d['name'])
+        message += str(d['name'].lower()) + '=' + str(v) + ';;;; '
+except:
+    print "Plugin Failed!"
+    sys.exit(2)
+
 print message
+sys.exit(0)

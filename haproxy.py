@@ -1,17 +1,12 @@
 #!/usr/bin/env python
-import sys
-import re
-import socket
-
 """
-Requirements:
-
 Add the following line to haproxy.cfg under the global section (and restart haproxy):
 
 stats socket /var/lib/haproxy/stats.sock level admin
-
 """
-
+import sys
+import re
+import socket
 try:
     s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     s.connect("/var/lib/haproxy/stats.sock")
@@ -19,7 +14,7 @@ try:
     data = s.recv(32768)
     s.close()
 except:
-    print "connection failure"
+    print "Plugin Failed!"
     sys.exit(2)
 
 stats = data.split()

@@ -24,7 +24,7 @@ command = [r'c:\windows\system32\typeperf.exe', '-sc', '1']
 try:
     output = subprocess.check_output(command + counters)
 except:
-    print "connection failure"
+    print "Plugin Failed!"
     sys.exit(2)
     
 perf_data = {}

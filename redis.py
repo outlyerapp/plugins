@@ -5,9 +5,10 @@ import subprocess
 try:
     output = subprocess.check_output(('redis-cli', 'info'))
 except:
+    print "Plugin Failed!"
     sys.exit(2)
-metrics = output.split()
 
+metrics = output.split()
 exclusion_list = ['redis_version',
                   'redis_git_sha1',
                   'redis_build_id',

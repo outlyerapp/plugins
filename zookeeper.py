@@ -8,6 +8,7 @@ from StringIO import StringIO
 HOST = 'localhost'
 PORT = 2181
 
+
 class ZooKeeperServer(object):
 
     def __init__(self, host=HOST, port=PORT, timeout=1):
@@ -131,7 +132,7 @@ def get_cluster_stats():
 
         # this error should be also visible in a variable
         # exposed by the server in the statistics
-        print "unable to connect to server %s on port %s" % (HOST, PORT)
+        print "Plugin Failed! Unable to connect to server %s on port %s" % (HOST, PORT)
         sys.exit(2)
 
     return stats

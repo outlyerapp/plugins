@@ -4,9 +4,9 @@ import requests
 
 URL = 'http://localhost:8098/stats'
 try:
-    resp = requests.get(URL).json()
+    resp = requests.get(URL, timeout=60).json()
 except:
-    print "connection failed"
+    print "Plugin Failed! Unable to connect to %s" % URL
     sys.exit(2)
 
 exclude_list = ['goldrush_version', 'erlang_js_version', 'riak_kv_version', 'riak_pipe_version', 'compiler_version',

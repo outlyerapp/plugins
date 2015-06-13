@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+"""
+Update the USER and PASSWORD variables below.
+"""
+
 import sys
 import requests
 from requests.auth import HTTPBasicAuth
@@ -12,9 +16,9 @@ auth = HTTPBasicAuth(USER, PASSWORD)
 perf_data = {}
 
 try:
-    default = requests.get('http://localhost:8091/pools/default', auth=auth).json()
+    default = requests.get('http://localhost:8091/pools/default', auth=auth, timeout=60).json()
 except:
-    print "connection failed!"
+    print "Plugin Failed! Unable to connect to http://localhost:8091/pools/default"
     sys.exit(2)
 
 # The top level metrics

@@ -14,8 +14,9 @@ def query_stats():
         resp = client.recv(1024)
         client.close()
         return resp
-    except Exception, e:
-        print "host unreachable - %s" % e
+
+    except:
+        print "Plugin Failed! Unable to connect to %s:%s" % (HOST, PORT)
         sys.exit(2)
 
 

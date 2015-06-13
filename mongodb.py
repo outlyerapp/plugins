@@ -7,6 +7,7 @@ try:
     output = subprocess.check_output(('tail', '-1'), stdin=ps.stdout)
     ps.wait()
 except:
+    print "Plugin Failed!"
     sys.exit(2)
 
 metrics = output.split()

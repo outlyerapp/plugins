@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+"""
+Update the MYSQL_USER and MYSQL_PASSWORD variables below.
+"""
 import subprocess
 import re
 import sys
@@ -17,7 +20,7 @@ if MYSQL_PASSWORD:
 try:
     slave_status = subprocess.check_output(command)
 except:
-    print "connection failure for slave status"
+    print "Plugin Failed!"
     sys.exit(2)
 
 output = "OK | "
