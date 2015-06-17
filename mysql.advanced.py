@@ -145,6 +145,11 @@ write_cache(json_data)
 # Finally nagios exit with perfdata
 perf_data = "OK | "
 for k, v in result.iteritems():
-    perf_data += "%s=%s;;;; " % (k, v)
+    try:
+        _ = float(v)
+        perf_data += "%s=%s;;;; " % (k, v) 
+    except ValueError:
+            continue
+
 print perf_data
 sys.exit(0)
