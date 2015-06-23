@@ -3,7 +3,6 @@ import subprocess
 import sys
 import re
 
-
 counters = ['\SQLServer:Access Methods\FreeSpace Scans/sec',
             '\SQLServer:Access Methods\Full Scans/sec',
             '\SQLServer:Buffer Manager\Buffer cache hit ratio',
@@ -28,15 +27,17 @@ try:
 except:
     print "Plugin Failed!"
     sys.exit(2)
-    
+
+s_counters = output.splitlines()[1].split(',')
 perf_data = {}
 i = 1
-for counter in counters:
-    metric = counter.split('\\')[2].lower()
-    metric = re.sub('[^0-9a-zA-Z]+', '_', metric)
-    value = output.splitlines()[2].split(',')[i].replace('"','').strip()
-    perf_data[metric] = value
-    i += 1
+for s_counter in s_counters:
+    if 'PDH-CSV' not in s_counter:
+        metric = s_counter.rsplit('\\', 1)[1].strip('"').lower()
+        metric = re.sub('[^0-9a-zA-Z]+', '_', metric).strip('_')
+        value = output.splitlines()[2].split(',')[i].replace('"','').strip()
+        perf_data[metric] = value
+        i += 1
 
 response = "OK | "
 for k, v in perf_data.iteritems():
@@ -44,3 +45,4 @@ for k, v in perf_data.iteritems():
     
 print response
 sys.exit(0)
+
