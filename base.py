@@ -220,7 +220,7 @@ def check_diskio():
 def check_virtmem():
     try:
         virtmem = psutil.virtual_memory()._asdict()
-        return dict(("vmem." + k, v) for k,v in virtmem.items())
+        return dict(("vmem." + k, "%s%s" % (v, 'b')) for k, v in virtmem.items())
     except:
         return {}
 
