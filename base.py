@@ -56,7 +56,7 @@ def check_memory():
 def check_cpu():
     """returns a dict of cpu type : % used"""
     try:
-        cpu = "%d%%" % int(psutil.cpu_percent())
+        cpu = "%d%%" % int(psutil.cpu_percent(interval=5))
         cpu_used = dict(cpu=cpu)
 
         return cpu_used
