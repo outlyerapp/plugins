@@ -2,7 +2,6 @@
 import subprocess
 import sys
 
-os.environ['LD_LIBRARY_PATH'] = '/lib:/usr/lib:/usr/local/lib'
 command = "/usr/bin/varnishstat -1 | awk '{print $1,$2}'"
 
 try:
