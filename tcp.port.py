@@ -18,6 +18,6 @@ if up:
     print "success"
     sys.exit(0)
 else:
-    print "sonnection failure"
+    print "connection failure"
     sys.exit(2)
 
