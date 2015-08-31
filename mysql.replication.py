@@ -33,9 +33,9 @@ stats_count=0
 for line in slave_metric_list:
     if line and ':' in line:
         stats_count = 1
-        metric = line.split(': ')
+        metric = line.split(':')
         k = metric[0].strip().lower()
-        v = metric[1]
+        v = metric[1].strip()
         output += k + '=' + v + ';;;; '
         if k in ('slave_io_running','slave_sql_running'):
             if v == 'No':
