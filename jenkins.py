@@ -27,7 +27,7 @@ status = build_instance.get_status()
 
 perf_data = "build_number=%s;;;; duration=%ss;;;;" % (last_build, duration) 
 
-if status == "SUCCESS":
+if status == "SUCCESS" or status == "null":
     print "OK | " + perf_data
     sys.exit(0)
 else:
