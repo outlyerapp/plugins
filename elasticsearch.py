@@ -8,8 +8,12 @@ PORT = 9200
 BASE_URL = "http://%s:%s" % (HOST, PORT)
 LOCAL_URL = "/_nodes/_local"
 HEALTH_URL = "/_cluster/health"
-STATS_URL = "/_nodes/_local/stats"
 
+# Choose the elasticsearch stats to return
+# Any of settings,os,process,jvm,thread_pool,network,transport,http,plugins
+# OR leave empty for all statistics
+STATS = ""
+STATS_URL = "/_nodes/_local/stats/%s" % STATS
 
 def _get_es_stats(url):
     data = requests.get(url)
