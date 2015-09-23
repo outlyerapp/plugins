@@ -6,8 +6,9 @@ import collections
 HOST = 'localhost'
 PORT = 9200
 BASE_URL = "http://%s:%s" % (HOST, PORT)
+LOCAL_URL = "/_nodes/_local"
 HEALTH_URL = "/_cluster/health"
-NODES_URL = "/_nodes/stats?all=true&human"
+STATS_URL = "/_nodes/_local/stats"
 
 
 def _get_es_stats(url):
@@ -31,7 +32,7 @@ def flatten(d, parent_key='', sep='.'):
 
 
 try:
-    es_stats = flatten(_get_es_stats(BASE_URL + NODES_URL))
+    es_stats = flatten(_get_es_stats(BASE_URL + STATS_URL))
     es_health = flatten(_get_es_stats(BASE_URL + HEALTH_URL))
 
     perf_data = "OK | "
@@ -39,7 +40,7 @@ try:
         if str(v)[0].isdigit():
             k = k.rsplit('.')[2::]
             perf_data += '.'.join(k) + '=' + str(v) + ';;;; '
-            
+
     for k, v in es_health.iteritems():
         if str(v)[0].isdigit():
             perf_data += str(k) + "=" + str(v) + ';;;; '
