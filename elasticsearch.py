@@ -19,6 +19,7 @@ HEALTH_URL = "/_cluster/health"
 # OR leave empty for all statistics
 STATS = ""
 STATS_URL = "/_nodes/_local/stats/%s" % STATS
+CLUSTER_STATS_URL = "/_cluster/stats"
 
 def _get_es_stats(url):
     """ Get the node stats
@@ -47,6 +48,7 @@ def flatten(d, parent_key='', sep='.'):
 try:
     es_stats = flatten(_get_es_stats(BASE_URL + STATS_URL))
     es_health = flatten(_get_es_stats(BASE_URL + HEALTH_URL))
+    cluster_stats = flatten(_get_es_stats(BASE_URL + CLUSTER_STATS_URL))
 
     perf_data = "OK | "
     for k, v in es_stats.iteritems():
@@ -58,10 +60,14 @@ try:
         if str(v)[0].isdigit():
             perf_data += str(k) + "=" + str(v) + ';;;; '
 
+    for k, v in cluster_stats.iteritems():
+        if str(v)[0].isdigit():
+            perf_data += str(k) + "=" + str(v) + ';;;; '
+
+
     print(perf_data)
     sys.exit(0)
 
 except Exception as e:
     print("Plugin Failed! Exception: " + str(e))
     sys.exit(2)
-
