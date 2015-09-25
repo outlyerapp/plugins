@@ -3,6 +3,11 @@ import sys
 import requests
 import collections
 
+"""
+Hit up the nodes stats url and pull back all the metrics for that node
+TODO: clean up some of the kv pairs coming back and exclude the non-numeric
+values (some come back as mb and have a byte equiv key
+"""
 HOST = 'localhost'
 PORT = 9200
 BASE_URL = "http://%s:%s" % (HOST, PORT)
@@ -16,6 +21,8 @@ STATS = ""
 STATS_URL = "/_nodes/_local/stats/%s" % STATS
 
 def _get_es_stats(url):
+    """ Get the node stats
+    """
     data = requests.get(url)
     if data.status_code == 200:
         stats = data.json()
@@ -25,6 +32,8 @@ def _get_es_stats(url):
 
 
 def flatten(d, parent_key='', sep='.'):
+    """ flatten a dictionary into a dotted string
+    """
     items = []
     for key, value in d.items():
         new_key = parent_key + sep + key if parent_key else key
