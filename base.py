@@ -169,7 +169,7 @@ def check_cputime():
         cpu_map['cpu.cores'] = psutil.cpu_count(logical=True)
         
         # get the cpu speed on linux
-        if os.name == 'posix':
+        if sys.platform == 'linux2':
             command = "cat /proc/cpuinfo"
             all_info = subprocess.check_output(command, shell=True).strip()
             for line in all_info.split("\n"):
