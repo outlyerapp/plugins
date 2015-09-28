@@ -168,12 +168,14 @@ def check_cputime():
                 
         cpu_map['cpu.cores'] = psutil.cpu_count(logical=True)
         
-        command = "cat /proc/cpuinfo"
-        all_info = subprocess.check_output(command, shell=True).strip()
-        for line in all_info.split("\n"):
-             if "model name" in line:
-                 speed = re.sub( ".*model name.*:", "", line,1).split(' ')[-1]
-        cpu_map['cpu.speed'] = speed
+        # get the cpu speed on linux
+        if os.name == 'posix':
+            command = "cat /proc/cpuinfo"
+            all_info = subprocess.check_output(command, shell=True).strip()
+            for line in all_info.split("\n"):
+                if "model name" in line:
+                     speed = re.sub( ".*model name.*:", "", line,1).split(' ')[-1]
+            cpu_map['cpu.speed'] = speed
         
         return cpu_map
 
