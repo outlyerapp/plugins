@@ -3,7 +3,7 @@
 import psutil
 import re
 import time
-from sys import exit
+import sys
 
 # Set your regular expression filter to match an application's cmdline string
 
@@ -204,7 +204,7 @@ class ApplicationProfiler(object):
         """
         if self._build_profile_result is False:
             print("CRITICAL | Application not found")
-            exit(2)
+            sys.exit(2)
 
         output = "OK | "
         for key, val in self.profile.iteritems():
@@ -320,7 +320,7 @@ try:
     ap = ApplicationProfiler(FILTER)
     ap.show_results()
 except Exception as e:
-    print("CRITICAL | Plugin Failure: {exception_type}".format(
-        exception_type=e
-    ))
-    exit(2)
+    exc_type, exc_value, exc_traceback = sys.exc_info()
+    print("CRITICAL | Plugin Failure: Exception: {exception_type} "
+          "Msg: {msg}".format(exception_type=exc_type.__name__, msg=e))
+    sys.exit(2)
