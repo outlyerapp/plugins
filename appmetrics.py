@@ -15,8 +15,9 @@ def compare_list_strings(a):
     Compare all strings in a given iterable (list, array)
 
     :arg a: array-like data structure
+
     :return bool: Return False if an array item is not the same as the others.
-                  Otherwise, return True
+    Otherwise, return True
     """
     if len(a) <= 1:
         return True
@@ -28,10 +29,22 @@ def compare_list_strings(a):
 
 
 def mb(num):
+    """
+    Convert bytes to megabytes
+
+    :arg num: int|float: data in bytes
+
+    :return float: data in megabytes
+    """
+
     return num / 1024.0 / 1024.0
 
 
 class ApplicationProfiler(object):
+    """
+
+    Takes a regular expression filter and provides metrics for all matched processes
+    """
 
     def __init__(self, search_filter):
         """
@@ -61,6 +74,8 @@ class ApplicationProfiler(object):
         :ivar profile['io_counters_read']: list: Number of read io counters
 
         :ivar profile['io_counters_write']: list: Number of write io counters
+
+        :ivar current_time: float: Current time (epoch)
 
         :ivar profile['running_time']: list: Difference of current time (epoch)
         and time started (epoch)
