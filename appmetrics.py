@@ -4,10 +4,14 @@ import psutil
 import re
 import time
 import sys
+from traceback import format_exception
 
 # Set your regular expression filter to match an application's cmdline string
+# Set DEBUG to True if you would like to print all of the data objects and
+# return the stacktrace.
 
 FILTER = 'CHANGE_ME'
+DEBUG = False
 
 
 def compare_list_strings(a):
@@ -43,7 +47,7 @@ def mb(num):
 class ApplicationProfiler(object):
     """
 
-    Takes a regular expression filter and provides metrics for all matched processes
+    Takes a regex filter and provides metrics for matched processes
     """
 
     def __init__(self, search_filter):
@@ -111,6 +115,9 @@ class ApplicationProfiler(object):
             except psutil.NoSuchProcess:
                 continue
 
+            if DEBUG:
+                print("Data Object: {data}\n".format(data=data))
+
             if data['cmdline']:
                 full_command = " ".join(data['cmdline'])
             else:
@@ -154,18 +161,25 @@ class ApplicationProfiler(object):
                     self.profile['memory_percent'].append(0.0)
 
                 if 'memory_info' in data:
-                    if data['memory_info'][0]:
-                        self.profile['rss'].append(
-                            mb(float(data['memory_info'][0]))
-                        )
+                    if data['memory_info']:
+                        if data['memory_info'][0]:
+                            self.profile['rss'].append(
+                                mb(float(data['memory_info'][0]))
+                            )
+                        else:
+                            self.profile['rss'].append(0.0)
+                        if data['memory_info'][1]:
+                            self.profile['vms'].append(
+                                mb(float(data['memory_info'][1]))
+                            )
+                        else:
+                            self.profile['vms'].append(0.0)
                     else:
                         self.profile['rss'].append(0.0)
-                    if data['memory_info'][1]:
-                        self.profile['vms'].append(
-                            mb(float(data['memory_info'][1]))
-                        )
-                    else:
                         self.profile['vms'].append(0.0)
+                else:
+                    self.profile['rss'].append(0.0)
+                    self.profile['vms'].append(0.0)
 
                 if 'num_fds' in data:
                     if data['num_fds']:
@@ -178,18 +192,25 @@ class ApplicationProfiler(object):
                     self.profile['num_fds'].append(0.0)
 
                 if 'io_counters' in data:
-                    if data['io_counters'][0]:
-                        self.profile['io_counters_read'].append(
-                            float(data['io_counters'][0])
-                        )
+                    if data['io_counters']:
+                        if data['io_counters'][0]:
+                            self.profile['io_counters_read'].append(
+                                float(data['io_counters'][0])
+                            )
+                        else:
+                            self.profile['io_counters_read'].append(0.0)
+                        if data['io_counters'][1]:
+                            self.profile['io_counters_write'].append(
+                                float(data['io_counters'][1])
+                            )
+                        else:
+                            self.profile['io_counters_read'].append(0.0)
                     else:
                         self.profile['io_counters_read'].append(0.0)
-                    if data['io_counters'][1]:
-                        self.profile['io_counters_write'].append(
-                            float(data['io_counters'][1])
-                        )
-                    else:
                         self.profile['io_counters_write'].append(0.0)
+                else:
+                    self.profile['io_counters_read'].append(0.0)
+                    self.profile['io_counters_write'].append(0.0)
 
                 running_time = self.current_time - float(data['create_time'])
                 self.profile['running_time'].append(running_time)
@@ -202,6 +223,10 @@ class ApplicationProfiler(object):
 
         This method was inspired by the base plugin.
         """
+
+        if DEBUG:
+            print("Profile Object: {profile}\n".format(profile=self.profile))
+
         if self._build_profile_result is False:
             print("CRITICAL | Application not found")
             sys.exit(2)
@@ -323,4 +348,11 @@ except Exception as e:
     exc_type, exc_value, exc_traceback = sys.exc_info()
     print("CRITICAL | Plugin Failure: Exception: {exception_type} "
           "Msg: {msg}".format(exception_type=exc_type.__name__, msg=e))
+    if DEBUG:
+        lines = format_exception(exc_type, exc_value, exc_traceback)
+        s = ''.join(line for line in lines)
+        lines = s.split('\n')
+        for line in lines:
+            print(line)
+
     sys.exit(2)
