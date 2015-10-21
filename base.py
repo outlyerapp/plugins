@@ -12,7 +12,7 @@ if os.name == 'nt':
 
 
 def _bytes_to_gb(num):
-    return int(num) / 1024 / 1024 / 1024
+    return round(float(num) / 1024 / 1024 / 1024, 2)
 
 
 def _get_counter_increment(before, after):
