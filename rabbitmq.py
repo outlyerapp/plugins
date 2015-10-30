@@ -1,58 +1,75 @@
 #!/usr/bin/python
-
-"""
-Update the settings block below
-"""
-
 import sys
 import requests
+from urllib import quote
 
 # Settings
 HOST = "localhost"
-QUEUES = [""]
-QUEUES_VHOST = '%%2f'
-USERNAME = "guest"
-PASSWORD = "guest"
+USERNAME = ""
+PASSWORD = ""
 PORT = "15672"
-URL = "http://%s:%s/api/overview" % (HOST, PORT)
 
-def get_data(url):
-    r = requests.get(url, auth=(USERNAME, PASSWORD))
-    return r.json()
-
-# Get overview stats
-try:
-    overview = get_data("http://%s:%s/api/overview" % (HOST, PORT))
-except:
-    print "Plugin Failed! Unable to connect to http://%s:%s/api/overview" % (HOST, PORT)
-    sys.exit(2)
+overview = requests.get("http://%s:%s/api/overview" % (HOST, PORT), auth=(USERNAME, PASSWORD)).json()
 
 metrics = {}
 
-# Message Stats
-metrics['message_stats.publish'] = overview['message_stats']['publish']
-metrics['message_stats.publish_rate'] = overview['message_stats']['publish_details']['rate']
-metrics['message_stats.deliver_get'] = overview['message_stats']['deliver_get']
-metrics['message_stats.deliver_get_rate'] = overview['message_stats']['deliver_get_details']['rate']
-metrics['message_stats.confirm'] = overview['message_stats']['confirm']
-metrics['message_stats.confirm_rate'] = overview['message_stats']['confirm_details']['rate']
-metrics['message_stats.deliver_no_ack'] = overview['message_stats']['deliver_no_ack']
-metrics['message_stats.deliver_no_ack_rate'] = overview['message_stats']['deliver_no_ack_details']['rate']
+def flatten(structure, key="", path="", flattened=None):
+    if flattened is None:
+        flattened = {}
+    if type(structure) not in (dict, list):
+        flattened[((path + ".") if path else "") + key] = structure
+    elif isinstance(structure, list):
+        for i, item in enumerate(structure):
+            flatten(item, "%d" % i, path + "." + key, flattened)
+    else:
+        for new_key, value in structure.items():
+            flatten(value, new_key, path + "." + key, flattened)
+    return flattened
 
-# Queue Totals
-metrics['queue_totals.messages'] = overview['queue_totals']['messages']
-metrics['queue_totals.rate'] = overview['queue_totals']['messages_details']['rate']
-metrics['queue_totals.messages_ready'] = overview['queue_totals']['messages_ready']
-metrics['queue_totals.messages_ready_rate'] = overview['queue_totals']['messages_ready_details']['rate']
-metrics['queue_totals.unack'] = overview['queue_totals']['messages_unacknowledged']
-metrics['queue_totals.unack_rate'] = overview['queue_totals']['messages_unacknowledged_details']['rate']
+def get_data(data, segment, prefix):
+    message_stats = data[segment]
+    return flatten(message_stats, segment, prefix)
 
-# Object Totals
-metrics['object_totals.consumers'] = overview['object_totals']['consumers']
-metrics['object_totals.queues'] = overview['object_totals']['queues']
-metrics['object_totals.exhanges'] = overview['object_totals']['exchanges']
-metrics['object_totals.connections'] = overview['object_totals']['connections']
-metrics['object_totals.channels'] = overview['object_totals']['channels']
+def get_overview():
+    overview = {}
+    resp = requests.get("http://%s:%s/api/overview" % (HOST, PORT), auth=(USERNAME, PASSWORD)).json()
+    overview.update(get_data(resp, 'message_stats', 'overview'))
+    overview.update(get_data(resp, 'queue_totals', 'overview'))
+    overview.update(get_data(resp, 'object_totals', 'overview'))
+    return overview
+
+def get_queue_stats(vhost, queue):
+    queue_stats = {}
+    if vhost == '/':
+        resp = requests.get("http://%s:%s/api/queues/%%2F/%s" % (HOST, PORT, queue), auth=(USERNAME, PASSWORD)).json()
+    else:
+        resp = requests.get("http://%s:%s/api/queues/%s/%s" % (HOST, PORT, quote(vhost), queue), auth=(USERNAME, PASSWORD)).json()
+    try:
+        queue_stats.update(get_data(resp, 'message_stats', 'queues.' + queue))
+        return queue_stats
+    except:
+        return {}
+
+def get_vhosts():
+    vhosts = []
+    resp = requests.get("http://%s:%s/api/vhosts" % (HOST, PORT), auth=(USERNAME, PASSWORD)).json()
+    for vhost in resp:
+        vhosts.append(vhost['name'])
+    return vhosts
+    
+def get_queues(vhost):
+    queues = []
+    resp = requests.get("http://%s:%s/api/queues/%s" % (HOST, PORT, vhost), auth=(USERNAME, PASSWORD)).json()
+    for queue in resp:
+        queues.append(queue['name'])
+    return queues
+
+metrics.update(get_overview())
+vhosts = get_vhosts()
+for vhost in vhosts:
+    queues = get_queues(vhost)
+    for queue in queues:
+        metrics.update(get_queue_stats(vhost, queue))
 
 perf_data = "OK | "
 for k, v in metrics.iteritems():
@@ -60,4 +77,3 @@ for k, v in metrics.iteritems():
 
 print perf_data
 sys.exit(0)
-
