@@ -80,9 +80,6 @@ class ApplicationProfiler(object):
         :ivar profile['io_counters_write']: list: Number of write io counters
 
         :ivar current_time: float: Current time (epoch)
-
-        :ivar profile['running_time']: list: Difference of current time (epoch)
-        and time started (epoch)
         """
         self.search_filter = search_filter
         self.profile = {}
@@ -97,7 +94,6 @@ class ApplicationProfiler(object):
         self.profile['num_fds'] = []
         self.profile['io_counters_read'] = []
         self.profile['io_counters_write'] = []
-        self.profile['running_time'] = []
         self.current_time = time.time()
         self._build_profile_result = self._build_profile()
 
@@ -212,9 +208,6 @@ class ApplicationProfiler(object):
                     self.profile['io_counters_read'].append(0.0)
                     self.profile['io_counters_write'].append(0.0)
 
-                running_time = self.current_time - float(data['create_time'])
-                self.profile['running_time'].append(running_time)
-
         return found
 
     def show_results(self):
@@ -294,25 +287,6 @@ class ApplicationProfiler(object):
                         key=key,
                         av=av
                     )
-                elif key == 'running_time':
-                    output += "{name}.{key}.high={mx}s;;;; ".format(
-                        name=self.p_name,
-                        key=key,
-                        mx=mx
-                    )
-
-                    output += "{name}.{key}.low={mn}s;;;; ".format(
-                        name=self.p_name,
-                        key=key,
-                        mn=mn
-                    )
-
-                    output += "{name}.{key}.average={av}s;;;; ".format(
-                        name=self.p_name,
-                        key=key,
-                        av=av
-                    )
-
                 else:
 
                     output += "{name}.{key}.high={mx};;;; ".format(
