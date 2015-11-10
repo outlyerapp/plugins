@@ -44,7 +44,7 @@ def flatten(d, parent_key='', sep='.'):
             items.append((new_key, value))
     return dict(items)
 
-
+exit_code = 0
 try:
     es_stats = flatten(_get_es_stats(BASE_URL + STATS_URL))
     es_health = flatten(_get_es_stats(BASE_URL + HEALTH_URL))
@@ -59,6 +59,9 @@ try:
     for k, v in es_health.iteritems():
         if str(v)[0].isdigit():
             perf_data += str(k) + "=" + str(v) + ';;;; '
+    
+    if es_health['status'] != 'green':
+        exit_status = 2
 
     for k, v in cluster_stats.iteritems():
         if str(v)[0].isdigit():
@@ -66,7 +69,7 @@ try:
 
 
     print(perf_data)
-    sys.exit(0)
+    sys.exit(exit_code)
 
 except Exception as e:
     print("Plugin Failed! Exception: " + str(e))
