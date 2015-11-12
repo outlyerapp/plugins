@@ -60,7 +60,11 @@ try:
         if str(v)[0].isdigit():
             perf_data += str(k) + "=" + str(v) + ';;;; '
     
-    if es_health['status'] != 'green':
+    if es_health['status'] == 'green':
+        exit_status = 0
+    elif es_health['status'] == 'yellow':
+        exit_status = 1
+    elif es_health['status'] == 'red':
         exit_status = 2
 
     for k, v in cluster_stats.iteritems():
