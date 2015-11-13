@@ -28,10 +28,11 @@ def get_proc_name(proc):
 # get all of the process counts
 running_processes = {}
 for p in psutil.process_iter():
+    process_name = get_proc_name(p)
     if get_proc_name(p) in running_processes:
-        running_processes[get_proc_name(p)] += 1
+        running_processes[process_name] += 1
     else:
-        running_processes[get_proc_name(p)] = 1
+        running_processes[process_name] = 1
 
 # print the counts and exit correctly
 output = ""
