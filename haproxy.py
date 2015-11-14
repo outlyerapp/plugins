@@ -8,7 +8,7 @@ Requirements:
 
 Add the following line to haproxy.cfg under the global section (and restart haproxy):
 
-stats socket /var/lib/haproxy/stats.sock user dataloop group root level operator
+stats socket /var/run/haproxy.sock user dataloop group root level operator
 
 """
 
