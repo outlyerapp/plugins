@@ -16,6 +16,7 @@ import psycopg2.extras
 import functools
 import time
 import sys
+from time import sleep
 
 # Settings
 HOST = 'localhost'
@@ -23,6 +24,7 @@ PORT = '5432'
 DB = ''
 USER = 'postgres'
 PASSWORD = ''
+
 
 # Cache for postgres query values, this prevents opening db connections for each metric_handler callback
 class Cache(object):
@@ -60,6 +62,7 @@ def pg_metrics_queries():
     idle = 0
     idleintxn = 0
     waiting = 0
+    waitingtrue = 0
     active_results = []
     for state, waiting, xact_start_sec, query_start_sec in results:
         if state == 'active':
@@ -76,19 +79,19 @@ def pg_metrics_queries():
     # determine longest transaction in seconds
     sorted_by_xact = sorted(results, key=lambda tup: tup[2], reverse=True)
     longest_xact_in_sec = (sorted_by_xact[0])[2]
-    
+
     # determine longest active query in seconds
     sorted_by_query = sorted(active_results, reverse=True)
     longest_query_in_sec = sorted_by_query[0]
 
     pg_metrics.update(
         {'Pypg_idle_sessions':idle,
-        'Pypg_active_sessions':active,
-        'Pypg_waiting_sessions':waiting,
-        'Pypg_idle_in_transaction_sessions':idleintxn,
-        'Pypg_longest_xact':longest_xact_in_sec,
-        'Pypg_longest_query':longest_query_in_sec})
-    
+         'Pypg_active_sessions':active,
+         'Pypg_waiting_sessions':waiting,
+         'Pypg_idle_in_transaction_sessions':idleintxn,
+         'Pypg_longest_xact':longest_xact_in_sec,
+         'Pypg_longest_query':longest_query_in_sec})
+
     # locks query
     db_curs.execute('select mode, locktype from pg_locks;')
     results = db_curs.fetchall()
@@ -102,11 +105,11 @@ def pg_metrics_queries():
             if 'Exclusive' in mode:
                 otherexclusive = int(otherexclusive + 1)
         if ('Share' in mode and locktype != 'virtualxid'):
-            shared = int(shared + 1) 
+            shared = int(shared + 1)
     pg_metrics.update(
         {'Pypg_locks_accessexclusive':accessexclusive,
-        'Pypg_locks_otherexclusive':otherexclusive,
-        'Pypg_locks_shared':shared})
+         'Pypg_locks_otherexclusive':otherexclusive,
+         'Pypg_locks_shared':shared})
 
     # background writer query returns one row that needs to be parsed
     db_curs.execute(
@@ -125,36 +128,64 @@ def pg_metrics_queries():
     buffers_alloc = int(bgwriter_values[7])
     pg_metrics.update(
         {'Pypg_bgwriter_checkpoints_timed':checkpoints_timed,
-        'Pypg_bgwriter_checkpoints_req':checkpoints_req,
-        'Pypg_bgwriter_checkpoint_write_time':checkpoint_write_time,
-        'Pypg_bgwriter_checkpoint_sync_time':checkpoint_sync_time,
-        'Pypg_bgwriter_buffers_checkpoint':buffers_checkpoint,
-        'Pypg_bgwriter_buffers_clean':buffers_clean,
-        'Pypg_bgwriter_buffers_backend':buffers_backend,
-        'Pypg_bgwriter_buffers_alloc':buffers_alloc})
+         'Pypg_bgwriter_checkpoints_req':checkpoints_req,
+         'Pypg_bgwriter_checkpoint_write_time':checkpoint_write_time,
+         'Pypg_bgwriter_checkpoint_sync_time':checkpoint_sync_time,
+         'Pypg_bgwriter_buffers_checkpoint':buffers_checkpoint,
+         'Pypg_bgwriter_buffers_clean':buffers_clean,
+         'Pypg_bgwriter_buffers_backend':buffers_backend,
+         'Pypg_bgwriter_buffers_alloc':buffers_alloc})
 
     # database statistics returns one row that needs to be parsed
+    # 5 seconds between metrics for rate calculation
+
     db_curs.execute(
         'select (sum(xact_commit) + sum(xact_rollback)), sum(tup_inserted), \
         sum(tup_updated), sum(tup_deleted), (sum(tup_returned) + sum(tup_fetched)), \
         sum(blks_read), sum(blks_hit) from pg_stat_database;')
-    results = db_curs.fetchall()
-    pg_stat_db_values = results[0]
+    results_past = db_curs.fetchall()
+
+    time_between = 5
+    sleep(time_between)
+    db_curs.execute(
+        'select (sum(xact_commit) + sum(xact_rollback)), sum(tup_inserted), \
+        sum(tup_updated), sum(tup_deleted), (sum(tup_returned) + sum(tup_fetched)), \
+        sum(blks_read), sum(blks_hit) from pg_stat_database;')
+    results_present = db_curs.fetchall()
+
+    pg_stat_past_db_values = results_past[0]
+    pg_stat_db_values = results_present[0]
     transactions = int(pg_stat_db_values[0])
+    transactions_per_sec = (transactions - int(pg_stat_past_db_values[0])) / time_between
     inserts = int(pg_stat_db_values[1])
+    inserts_per_sec = (inserts - int(pg_stat_past_db_values[1])) / time_between
     updates = int(pg_stat_db_values[2])
+    updates_per_sec = (updates - int(pg_stat_past_db_values[2])) / time_between
     deletes = int(pg_stat_db_values[3])
+    deletes_per_sec = (deletes - int(pg_stat_past_db_values[3])) / time_between
     reads = int(pg_stat_db_values[4])
+    reads_per_sec = (reads - int(pg_stat_past_db_values[4])) / time_between
     blksdisk = int(pg_stat_db_values[5])
+    blksdisk_per_sec = (blksdisk - int(pg_stat_past_db_values[5])) / time_between
     blksmem = int(pg_stat_db_values[6])
+    blksmem_per_sec = (blksmem - int(pg_stat_past_db_values[6])) / time_between
+
     pg_metrics.update(
         {'Pypg_transactions':transactions,
-        'Pypg_inserts':inserts,
-        'Pypg_updates':updates,
-        'Pypg_deletes':deletes,
-        'Pypg_reads':reads,
-        'Pypg_blks_diskread':blksdisk,
-        'Pypg_blks_memread':blksmem})
+         'Pypg_transactions_per_sec':transactions_per_sec,
+         'Pypg_inserts':inserts,
+         'Pypg_inserts_per_sec':inserts_per_sec,
+         'Pypg_updates':updates,
+         'Pypg_updates_per_sec':updates_per_sec,
+         'Pypg_deletes':deletes,
+         'Pypg_deletes_per_sec':deletes_per_sec,
+         'Pypg_reads':reads,
+         'Pypg_reads_per_sec':reads_per_sec,
+         'Pypg_blks_diskread':blksdisk,
+         'Pypg_blks_diskread_per_sec':blksdisk_per_sec,
+         'Pypg_blks_memread':blksmem,
+         'Pypg_blks_memread_per_sec':blksmem_per_sec
+        })
 
     # table statistics returns one row that needs to be parsed
     db_curs.execute(
@@ -170,9 +201,9 @@ def pg_metrics_queries():
     hours_since_analyze = int(pg_stat_table_values[3]) if pg_stat_table_values[3] != None else -1
     pg_metrics.update(
         {'Pypg_tup_seqscan':seqscan,
-        'Pypg_tup_idxfetch':idxfetch,
-        'Pypg_hours_since_last_vacuum':hours_since_vacuum,
-        'Pypg_hours_since_last_analyze':hours_since_analyze})
+         'Pypg_tup_idxfetch':idxfetch,
+         'Pypg_hours_since_last_vacuum':hours_since_vacuum,
+         'Pypg_hours_since_last_analyze':hours_since_analyze})
 
     db_curs.close()
     return pg_metrics
@@ -180,7 +211,8 @@ def pg_metrics_queries():
 # Metric handler uses dictionary pg_metrics keys to return values from queries based on metric name
 def metric_handler(name):
     pg_metrics = pg_metrics_queries()
-    return int(pg_metrics[name])     
+    return int(pg_metrics[name])
+
 
 def metric_init(params):
     global pgdsn
@@ -205,12 +237,19 @@ def metric_init(params):
         {'name':'Pypg_bgwriter_buffers_backend','units':'buffers','slope':'positive','description':'PG number of buffers written directly by a backend'},
         {'name':'Pypg_bgwriter_buffers_alloc','units':'buffers','slope':'positive','description':'PG number of buffers allocated'},
         {'name':'Pypg_transactions','units':'xacts','slope':'positive','description':'PG Transactions'},
+        {'name':'Pypg_transactions_per_sec','units':'xacts','slope':'positive','description':'PG Transactions per sec'},
         {'name':'Pypg_inserts','units':'tuples','slope':'positive','description':'PG Inserts'},
+        {'name':'Pypg_inserts_per_sec','units':'tuples','slope':'positive','description':'PG Inserts per sec'},
         {'name':'Pypg_updates','units':'tuples','slope':'positive','description':'PG Updates'},
+        {'name':'Pypg_updates_per_sec','units':'tuples','slope':'positive','description':'PG Updates per sec'},
         {'name':'Pypg_deletes','units':'tuples','slope':'positive','description':'PG Deletes'},
+        {'name':'Pypg_deletes_per_sec','units':'tuples','slope':'positive','description':'PG Deletes per sec'},
         {'name':'Pypg_reads','units':'tuples','slope':'positive','description':'PG Reads'},
+        {'name':'Pypg_reads_per_sec','units':'tuples','slope':'positive','description':'PG Reads per sec'},
         {'name':'Pypg_blks_diskread','units':'blocks','slope':'positive','description':'PG Blocks Read from Disk'},
+        {'name':'Pypg_blks_diskread_per_sec','units':'blocks','slope':'positive','description':'PG Blocks Read from Disk per sec'},
         {'name':'Pypg_blks_memread','units':'blocks','slope':'positive','description':'PG Blocks Read from Memory'},
+        {'name':'Pypg_blks_memread_per_sec','units':'blocks','slope':'positive','description':'PG Blocks Read from Memory per sec'},
         {'name':'Pypg_tup_seqscan','units':'tuples','slope':'positive','description':'PG Tuples sequentially scanned'},
         {'name':'Pypg_tup_idxfetch','units':'tuples','slope':'positive','description':'PG Tuples fetched from indexes'},
         {'name':'Pypg_hours_since_last_vacuum','units':'hours','slope':'both','description':'PG hours since last vacuum'},
@@ -230,8 +269,8 @@ try:
     for d in descriptors:
         v = d['call_back'](d['name'])
         message += str(d['name'].lower()) + '=' + str(v) + ';;;; '
-except:
-    print "Plugin Failed!"
+except Exception, e:
+    print "Plugin Failed!: %s" % e
     sys.exit(2)
 
 print message
