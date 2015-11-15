@@ -9,7 +9,10 @@ USERNAME = ""
 PASSWORD = ""
 PORT = "15672"
 
-overview = requests.get("http://%s:%s/api/overview" % (HOST, PORT), auth=(USERNAME, PASSWORD)).json()
+try:
+    overview = requests.get("http://%s:%s/api/overview" % (HOST, PORT), auth=(USERNAME, PASSWORD)).json()
+except Exception, e:
+    print "Plugin Failed! %s" % e
 
 metrics = {}
 
