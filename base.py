@@ -169,6 +169,7 @@ def check_virtmem():
     virtmem = psutil.virtual_memory()._asdict()
     virt_map['vmem.total_gb'] = "%sGb" % _bytes_to_gb(virtmem['total'])
     virt_map['vmem.available_gb'] = "%sGb" % _bytes_to_gb(virtmem['available'])
+    virt_map['vmem.used_gb'] = "%sGb" % _bytes_to_gb(virtmem['used'])
     virt_map.update(dict(("vmem." + k, v) for k, v in virtmem.items()))
     return virt_map
 
