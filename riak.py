@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 import sys
 import requests
+from socket import gethostname
 
-URL = 'http://localhost:8098/stats'
+URL = 'http://%s:8098/stats' % gethostname()
 try:
     resp = requests.get(URL, timeout=60).json()
 except:
