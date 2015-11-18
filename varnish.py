@@ -41,8 +41,3 @@ for k, v in metrics.iteritems():
 
 print output
 sys.exit(0)
-
-
-
-
-
