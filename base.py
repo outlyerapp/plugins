@@ -5,6 +5,7 @@ import time
 import re
 import psutil
 import subprocess
+import datetime
 
 if os.name == 'nt':
     import wmi
@@ -178,6 +179,13 @@ def check_ctxswitch():
     return dict(("ctx-switch." + k, v) for k,v in ctx_switch.items())
 
 
+def check_uptime():
+    boot_time = datetime.datetime.fromtimestamp(psutil.boot_time())
+    now_time = datetime.datetime.now()
+    uptime = now_time - boot_time
+    uptime_hours = (uptime.days * 24) + (uptime.seconds // 3600)
+    return {'uptime.hours': uptime_hours}
+
 checks = [
     check_disks,
     check_cpu,
@@ -188,7 +196,8 @@ checks = [
     check_netio,
     check_diskio,
     check_virtmem,
-    check_ctxswitch
+    check_ctxswitch,
+    check_uptime
 ]
 
 raw_output = {}
