@@ -74,7 +74,7 @@ def check_net():
 
 
 def check_load():
-    cores = psutil.NUM_CPUS
+    cores = psutil.cpu_count()
     load_avg = {}
     if os.name == 'nt':
         cpu_queue_length = sum([int(cpu.ProcessorQueueLength) for cpu in c.Win32_PerfRawData_PerfOS_System()])
