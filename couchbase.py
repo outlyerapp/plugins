@@ -19,14 +19,22 @@ auth = HTTPBasicAuth(USER, PASSWORD)
 
 # functions
 
+
+def average_list(l):
+    return reduce(lambda x, y: x + y, l) / float(len(l))
+
+
 def flatten(structure, key="", path="", flattened=None):
     if flattened is None:
         flattened = {}
     if type(structure) not in (dict, list):
         flattened[((path + ".") if path else "") + key] = structure
     elif isinstance(structure, list):
-        for i, item in enumerate(structure):
-            flatten(item, "%d" % i, path + "." + key, flattened)
+        if len(structure) > 1:
+            flattened[path + '.' + key] = average_list(structure)
+        else:
+            for i, item in enumerate(structure):
+                flatten(item, "%d" % i, path + "." + key, flattened)
     else:
         for new_key, value in structure.items():
             flatten(value, new_key, path + "." + key, flattened)
@@ -37,15 +45,12 @@ def bytes_to_gb(num):
     return round(float(num) / 1024 / 1024 / 1024, 2)
 
 
-def average_list(l):
-    return reduce(lambda x, y: x + y, l) / float(len(l))
-
 # pools
 
 try:
     default_pool = requests.get(URL + '/pools/default', auth=auth, timeout=60).json()
-except:
-    print "Plugin Failed! Unable to connect to %s" % URL
+except Exception, e:
+    print "Plugin Failed! Unable to connect to %s: %s" % (URL, e)
     sys.exit(2)
 
 # health
@@ -60,7 +65,7 @@ storage_totals = default_pool['storageTotals']
 
 for k, v in flatten(storage_totals, key='totals', path='storage').iteritems():
     if type(v) is int or type(v) is float:
-        metric_path =  k.lower()
+        metric_path = k.lower()
         perf_data += metric_path + '=' + str(v) + ';;;; '
         perf_data += metric_path + '_gb=' + str(bytes_to_gb(v)) + 'GB;;;; '
 
@@ -72,7 +77,7 @@ for node in nodes:
     if node['thisNode']:
         for k, v in flatten(node, key='stats', path='node').iteritems():
             if type(v) is int or type(v) is float:
-                metric_path =  k.lower().replace('..', '')
+                metric_path = k.lower()
                 perf_data += metric_path + '=' + str(v) + ';;;; '
 
 # buckets
@@ -86,16 +91,12 @@ bucket_names = []
 for bucket in buckets:
     bucket_names.append(bucket['name'])
 
-
-# this work of genius isn't ready for prime time yet
-
-# for name in bucket_names:
-#    for k, v in flatten(bucket, key=name, path='buckets').iteritems():
-#       bucket = requests.get(URL + '/pools/default/buckets/%s/stats' % name, auth=auth, timeout=60).json()
-#        if type(v) is int or type(v) is float:
-#            metric_path =  k.lower().replace('..', '')
-#            perf_data += metric_path + '=' + str(v) + ';;;; '
-
+for name in bucket_names:
+    bucket = requests.get(URL + '/pools/default/buckets/%s/stats?zoom=minute' % name, auth=auth, timeout=60).json()
+    for k, v in flatten(bucket, key=name, path='bucket').iteritems():
+        if type(v) is int or type(v) is float:
+            metric_path = k.lower()
+            perf_data += metric_path + '=' + str(v) + ';;;; '
 
 if healthy:
     print success_message + perf_data
