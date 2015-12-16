@@ -38,6 +38,13 @@ def exact_match(phrase, word):
     return bool(res)
 
 
+def calculate_rate(past, present):
+    try:
+        return round((float(present) - float(past)) / RATE_INTERVAL, 2)
+    except TypeError:
+        return round((_string_to_float(present) - _string_to_float(past)) / RATE_INTERVAL, 2)
+
+
 def check_disks():
     disk_usage = {}
     for partition in psutil.disk_partitions(all=False):
@@ -226,10 +233,7 @@ raw_output = {}
 for present_key, present_value in present_output.iteritems():
     if present_key in past_output:
         if 'per_sec' not in present_key:
-            try:
-                raw_output[present_key + '_per_sec'] = round((float(present_value) - float(past_output[present_key])) / RATE_INTERVAL, 2)
-            except TypeError:
-                raw_output[present_key + '_per_sec'] = (_string_to_float(present_value) - _string_to_float(past_output[present_key])) / RATE_INTERVAL
+            raw_output[present_key + '_per_sec'] = calculate_rate(present_value, past_output[present_key])
 
         if exact_match(present_key, 'network.bytes_sent'):
             raw_output['net_upload'] = str((_get_counter_increment(past_output[present_key], present_value) / 1024) / RATE_INTERVAL) + 'Kps'
