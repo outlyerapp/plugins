@@ -7,6 +7,8 @@ import psutil
 import subprocess
 import datetime
 
+RATE_INTERVAL = 5
+
 if os.name == 'nt':
     import wmi
     c = wmi.WMI()
@@ -18,10 +20,22 @@ def _bytes_to_gb(num):
 
 def _get_counter_increment(before, after):
     value = after - before
-    if value >= 0: return value
-    for boundary in [1<<16, 1<<32, 1<<64]:
+    if value >= 0:
+        return value
+    for boundary in [1 << 16, 1 << 32, 1 << 64]:
         if (value + boundary) > 0:
             return value + boundary
+
+
+def _string_to_float(num):
+    non_decimal = re.compile(r'[^\d.]+')
+    return round(float(non_decimal.sub('', num)), 2)
+
+
+def exact_match(phrase, word):
+    b = r'(\s|^|$)'
+    res = re.match(b + word + b, phrase, flags=re.IGNORECASE)
+    return bool(res)
 
 
 def check_disks():
@@ -58,19 +72,6 @@ def check_cpu():
     cpu = "%d%%" % int(psutil.cpu_percent(interval=5))
     cpu_used = dict(cpu=cpu)
     return cpu_used
-
-
-def check_net():
-    space_apart = 1
-    rx_before = psutil.net_io_counters().bytes_recv
-    sx_before = psutil.net_io_counters().bytes_sent
-    time.sleep(space_apart)
-    rx_after = psutil.net_io_counters().bytes_recv
-    sx_after = psutil.net_io_counters().bytes_sent
-    rx = "%dKps" % ((_get_counter_increment(rx_before, rx_after) / 1024) / space_apart)
-    sx = "%dKps" % ((_get_counter_increment(sx_before, sx_after) / 1024) / space_apart)
-    net = dict(net_download=rx, net_upload=sx)
-    return net
 
 
 def check_load():
@@ -191,7 +192,6 @@ checks = [
     check_disks,
     check_cpu,
     check_memory,
-    check_net,
     check_load,
     check_cputime,
     check_netio,
@@ -201,15 +201,45 @@ checks = [
     check_uptime
 ]
 
-raw_output = {}
+rates = [
+    check_diskio,
+    check_netio
+]
+
+past_output = {}
 for check in checks:
     try:
-        raw_output.update(check())
+        past_output.update(check())
     except Exception, e:
         continue
+
+time.sleep(RATE_INTERVAL)
+
+present_output = {}
+for check in rates:
+    try:
+        present_output.update(check())
+    except Exception, e:
+        continue
+
+raw_output = {}
+for present_key, present_value in present_output.iteritems():
+    if present_key in past_output:
+        if 'per_sec' not in present_key:
+            try:
+                raw_output[present_key + '_per_sec'] = round((float(present_value) - float(past_output[present_key])) / RATE_INTERVAL, 2)
+            except TypeError:
+                raw_output[present_key + '_per_sec'] = (_string_to_float(present_value) - _string_to_float(past_output[present_key])) / RATE_INTERVAL
+
+        if exact_match(present_key, 'network.bytes_sent'):
+            raw_output['net_upload'] = str((_get_counter_increment(past_output[present_key], present_value) / 1024) / RATE_INTERVAL) + 'Kps'
+
+        if exact_match(present_key, 'network.bytes_recv'):
+            raw_output['net_download'] = str((_get_counter_increment(past_output[present_key], present_value) / 1024) / RATE_INTERVAL) + 'Kps'
+
+raw_output.update(past_output)
 
 output = "OK | "
 for k, v in raw_output.iteritems():
     output += "%s=%s;;;; " % (k, v)
 print output + 'count=1;;;;'
-
