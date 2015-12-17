@@ -21,7 +21,7 @@ URL = 'http://127.0.0.1/nginx_status'
 TMPDIR = '/opt/dataloop/tmp'
 TMPFILE = 'dl-nginx.json'
 DATA = {}
-TIMESTAMP = datetime.now().strftime('%s')
+TIMESTAMP = datetime.utcnow().strftime('%s')
 
 
 def tmp_file():
