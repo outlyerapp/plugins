@@ -38,7 +38,7 @@ def exact_match(phrase, word):
     return bool(res)
 
 
-def calculate_rate(past, present):
+def calculate_rate(present, past):
     try:
         return round((float(present) - float(past)) / RATE_INTERVAL, 2)
     except TypeError:
