@@ -130,7 +130,7 @@ GraphConfig = (
 
 def bindprocess():
     for process in psutil.process_iter():
-        if process.name == PROCESS_NAME:
+        if process.name() == PROCESS_NAME:
             return True
     return False
 
