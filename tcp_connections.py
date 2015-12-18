@@ -1,37 +1,17 @@
 #!/usr/bin/env python
-import os
-import re
-import subprocess
 import sys
+import psutil
 
-'''This plugin requires netstat. On Ubuntu run apt-get install net-tools'''
+PORT = 22
 
-port = '22'
+cmap = {'in': 0,
+        'out': 0 }
 
-############################################
-cmd = "/bin/netstat -tn| grep ESTABLISHED "
-try:
-    resp = subprocess.check_output(cmd, stderr=subprocess.PIPE,shell=True)
-    
-except:
-    print "netstat execution failure, install net-tools package"
-    sys.exit(2)
+for c in psutil.net_connections(kind='inet'):
+    if len(c.laddr) > 0 and c.laddr[1] == PORT:
+        cmap['in'] += 1
+    if len(c.raddr) > 0 and c.raddr[1] == PORT:
+        cmap['out'] += 1
 
-connections_est = resp.split('\n')
-i = 0
-o = 0
-for connection in connections_est:
-    if connection:
-        local_side = connection.split()[3]
-        local_port = local_side.split(':')[1]
-        if local_port == '22':
-            i=i+1
-        #print 'input %d '% i
-        remote_side = connection.split()[4]
-        remote_port = remote_side.split(':')[1]
-        if remote_port == '22':
-            o=o+1
-        #print 'output %d '% o
-output = "OK | connections_in=%d;;;; connections_out=%d;;;;" % (i,o)
-print output
-sys.exit(0)    
+print "OK | connections_in=%d;;;; connections_out=%d;;;;" % (cmap['in'], cmap['out'])
+sys.exit(0)
