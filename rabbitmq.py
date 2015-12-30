@@ -16,22 +16,50 @@ except Exception, e:
 
 metrics = {}
 
-def flatten(structure, key="", path="", flattened=None):
-    if flattened is None:
-        flattened = {}
-    if type(structure) not in (dict, list):
-        flattened[((path + ".") if path else "") + key] = structure
-    elif isinstance(structure, list):
-        for i, item in enumerate(structure):
-            flatten(item, "%d" % i, path + "." + key, flattened)
-    else:
-        for new_key, value in structure.items():
-            flatten(value, new_key, path + "." + key, flattened)
-    return flattened
+
+def flatten(d, result=None):
+    if result is None:
+        result = {}
+    for key in d:
+        value = d[key]
+        if isinstance(value, dict):
+            value1 = {}
+            for keyIn in value:
+                value1[".".join([key,keyIn])]=value[keyIn]
+            flatten(value1, result)
+        elif isinstance(value, (list, tuple)):
+            for indexB, element in enumerate(value):
+                if isinstance(element, dict):
+                    value1 = {}
+                    index = 0
+                    for keyIn in element:
+                        newkey = ".".join([key,keyIn])
+                        value1[".".join([key,keyIn])]=value[indexB][keyIn]
+                        index += 1
+                    for keyA in value1:
+                        flatten(value1, result)
+        else:
+            result[key]=value
+    return result
+
+
+def is_digit(d):
+    if isinstance(d, bool):
+        return False
+    elif isinstance(d, int) or isinstance(d, float):
+        return True
+    return False
+
+
+def prepend_dict(d, s):
+    return dict(map(lambda (key, value): (s + str(key), value), d.items()))
+
 
 def get_data(data, segment, prefix):
-    message_stats = data[segment]
-    return flatten(message_stats, segment, prefix)
+    flattened_data = flatten(data)
+    appended_data = prepend_dict(flattened_data, prefix + '.' + segment + '.')
+    return appended_data
+
 
 def get_overview():
     overview = {}
@@ -40,6 +68,7 @@ def get_overview():
     overview.update(get_data(resp, 'queue_totals', 'overview'))
     overview.update(get_data(resp, 'object_totals', 'overview'))
     return overview
+
 
 def get_queue_stats(vhost, queue):
     queue_stats = {}
@@ -53,19 +82,22 @@ def get_queue_stats(vhost, queue):
     except:
         return {}
 
+
 def get_vhosts():
     vhosts = []
     resp = requests.get("http://%s:%s/api/vhosts" % (HOST, PORT), auth=(USERNAME, PASSWORD)).json()
     for vhost in resp:
         vhosts.append(vhost['name'])
     return vhosts
-    
+
+
 def get_queues(vhost):
     queues = []
     resp = requests.get("http://%s:%s/api/queues/%s" % (HOST, PORT, vhost), auth=(USERNAME, PASSWORD)).json()
     for queue in resp:
         queues.append(queue['name'])
     return queues
+
 
 metrics.update(get_overview())
 vhosts = get_vhosts()
@@ -76,7 +108,8 @@ for vhost in vhosts:
 
 perf_data = "OK | "
 for k, v in metrics.iteritems():
-    perf_data += "%s=%s;;;; " % (k, v)
+    if is_digit(v):
+        perf_data += "%s=%s;;;; " % (k, round(v, 2))
 
 print perf_data
 sys.exit(0)
