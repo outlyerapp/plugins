@@ -5,12 +5,22 @@ from urllib import quote
 
 # Settings
 HOST = "localhost"
-USERNAME = ""
-PASSWORD = ""
+USERNAME = "guest"
+PASSWORD = "guest"
 PORT = "15672"
+PROTO = "http"
 
 QUEUE_STATS = False
 EXCHANGE_STATS = False
+VERIFY_SSL = True
+
+
+def request_data(path):
+    if not VERIFY_SSL: requests.packages.urllib3.disable_warnings()
+    return requests.get("%s://%s:%s%s" % (PROTO, HOST, PORT, path),
+                        auth=(USERNAME, PASSWORD),
+                        timeout=10,
+                        verify=VERIFY_SSL).json()
 
 
 def flatten(d, result=None):
@@ -58,29 +68,29 @@ def get_data(data, prefix):
 
 
 def get_overview():
-    resp = requests.get("http://%s:%s/api/overview" % (HOST, PORT), auth=(USERNAME, PASSWORD)).json()
+    resp = request_data('/api/overview')
     return get_data(resp, 'overview.')
 
 
 def get_queue_stats(vhost, queue):
     if vhost == '/':
-        resp = requests.get("http://%s:%s/api/queues/%%2F/%s" % (HOST, PORT, queue), auth=(USERNAME, PASSWORD)).json()
+        resp = request_data("/api/queues/%%2F/%s" % queue)
     else:
-        resp = requests.get("http://%s:%s/api/queues/%s/%s" % (HOST, PORT, quote(vhost), queue), auth=(USERNAME, PASSWORD)).json()
+        resp = request_data("/api/queues/%s/%s" % (quote(vhost), queue))
     return get_data(resp, 'vhost.' + vhost + '.' + 'queue.' + queue + '.')
 
 
 def get_exchange_stats(vhost, exchange):
     if vhost == '/':
-        resp = requests.get("http://%s:%s/api/exchanges/%%2F/%s" % (HOST, PORT, exchange), auth=(USERNAME, PASSWORD)).json()
+        resp = request_data("/api/exchanges/%%2F/%s" % exchange)
     else:
-        resp = requests.get("http://%s:%s/api/exchanges/%s/%s" % (HOST, PORT, quote(vhost), exchange), auth=(USERNAME, PASSWORD)).json()
-    return get_data(resp, 'vhost.' + vhost + '.' + 'exchange.'  + exchange + '.')
+        resp = request_data("/api/exchanges/%s/%s" % (quote(vhost), exchange))
+    return get_data(resp, 'vhost.' + vhost + '.' + 'exchange.' + exchange + '.')
 
 
 def get_vhosts():
     vhost_names = []
-    resp = requests.get("http://%s:%s/api/vhosts" % (HOST, PORT), auth=(USERNAME, PASSWORD)).json()
+    resp = request_data("/api/vhosts")
     for vhost in resp:
         vhost_names.append(vhost['name'])
     return vhost_names
@@ -88,7 +98,7 @@ def get_vhosts():
 
 def get_queues(vhost):
     queue_names = []
-    resp = requests.get("http://%s:%s/api/queues/%s" % (HOST, PORT, vhost), auth=(USERNAME, PASSWORD)).json()
+    resp = request_data("/api/queues/%s" % vhost)
     for queue in resp:
         queue_names.append(queue['name'])
     return queue_names
@@ -96,7 +106,7 @@ def get_queues(vhost):
 
 def get_exchanges(vhost):
     exchange_names = []
-    resp = requests.get("http://%s:%s/api/exchanges/%s" % (HOST, PORT, vhost), auth=(USERNAME, PASSWORD)).json()
+    resp = request_data("/api/exchanges/%s" % vhost)
     for exchange in resp:
         exchange_names.append(exchange['name'])
     return exchange_names
@@ -121,14 +131,12 @@ try:
         for vhost in vhosts:
             exchanges = get_exchanges(vhost)
             for exchange in exchanges:
-                if exchange:
-                    metrics.update(get_exchange_stats(vhost, exchange))
+                if exchange: metrics.update(get_exchange_stats(vhost, exchange))
 
     # nagios format output
     perf_data = "OK | "
     for k, v in metrics.iteritems():
-        if is_digit(v):
-            perf_data += "%s=%s;;;; " % (k, round(v, 2))
+        if is_digit(v): perf_data += "%s=%s;;;; " % (k, round(v, 2))
     print perf_data
     sys.exit(0)
 
