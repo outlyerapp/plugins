@@ -8,13 +8,7 @@ HOST = "localhost"
 USERNAME = ""
 PASSWORD = ""
 PORT = "15672"
-
-try:
-    overview = requests.get("http://%s:%s/api/overview" % (HOST, PORT), auth=(USERNAME, PASSWORD)).json()
-except Exception, e:
-    print "Plugin Failed! %s" % e
-    
-metrics = {}
+QUEUE_STATS = False
 
 
 def flatten(d, result=None):
@@ -27,17 +21,17 @@ def flatten(d, result=None):
             for keyIn in value:
                 value1[".".join([key,keyIn])]=value[keyIn]
             flatten(value1, result)
-        elif isinstance(value, (list, tuple)):   
+        elif isinstance(value, (list, tuple)):
             for indexB, element in enumerate(value):
                 if isinstance(element, dict):
                     value1 = {}
                     index = 0
                     for keyIn in element:
-                        newkey = ".".join([key,keyIn])        
+                        newkey = ".".join([key,keyIn])
                         value1[".".join([key,keyIn])]=value[indexB][keyIn]
                         index += 1
                     for keyA in value1:
-                        flatten(value1, result)   
+                        flatten(value1, result)
         else:
             result[key]=value
     return result
@@ -62,51 +56,54 @@ def get_data(data, prefix):
 
 
 def get_overview():
-    overview = {}
     resp = requests.get("http://%s:%s/api/overview" % (HOST, PORT), auth=(USERNAME, PASSWORD)).json()
-    overview.update(get_data(resp, 'overview.'))
-    overview.update(get_data(resp, 'overview.'))
-    overview.update(get_data(resp, 'overview.'))
-    return overview
+    return get_data(resp, 'overview.')
+
 
 def get_queue_stats(vhost, queue):
-    queue_stats = {}
     if vhost == '/':
         resp = requests.get("http://%s:%s/api/queues/%%2F/%s" % (HOST, PORT, queue), auth=(USERNAME, PASSWORD)).json()
     else:
         resp = requests.get("http://%s:%s/api/queues/%s/%s" % (HOST, PORT, quote(vhost), queue), auth=(USERNAME, PASSWORD)).json()
-    try:
-        queue_stats.update(get_data(resp, 'queues.' + queue + '.'))
-        return queue_stats
-    except:
-        return {}
+    return get_data(resp, 'queues.' + queue + '.')
+
 
 def get_vhosts():
-    vhosts = []
+    vhost_names = []
     resp = requests.get("http://%s:%s/api/vhosts" % (HOST, PORT), auth=(USERNAME, PASSWORD)).json()
     for vhost in resp:
-        vhosts.append(vhost['name'])
-    return vhosts
-    
+        vhost_names.append(vhost['name'])
+    return vhost_names
+
+
 def get_queues(vhost):
-    queues = []
+    queue_names = []
     resp = requests.get("http://%s:%s/api/queues/%s" % (HOST, PORT, vhost), auth=(USERNAME, PASSWORD)).json()
     for queue in resp:
-        queues.append(queue['name'])
-    return queues
+        queue_names.append(queue['name'])
+    return queue_names
 
-metrics.update(get_overview())
-vhosts = get_vhosts()
-for vhost in vhosts:
-    queues = get_queues(vhost)
-    for queue in queues:
-        metrics.update(get_queue_stats(vhost, queue))
+try:
+    # overview metrics
+    metrics = {}
+    metrics.update(get_overview())
 
-perf_data = "OK | "
-for k, v in metrics.iteritems():
-    if is_digit(v):
-        perf_data += "%s=%s;;;; " % (k, round(v, 2))
+    # queue statistics
+    if QUEUE_STATS:
+        vhosts = get_vhosts()
+        for vhost in vhosts:
+            queues = get_queues(vhost)
+            for queue in queues:
+                metrics.update(get_queue_stats(vhost, queue))
 
-print perf_data
-sys.exit(0)
+    # nagios format output
+    perf_data = "OK | "
+    for k, v in metrics.iteritems():
+        if is_digit(v):
+            perf_data += "%s=%s;;;; " % (k, round(v, 2))
+    print perf_data
+    sys.exit(0)
 
+except Exception, e:
+    print "Plugin Failed! %s" % e
+    sys.exit(2)
