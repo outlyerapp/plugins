@@ -13,7 +13,7 @@ try:
     overview = requests.get("http://%s:%s/api/overview" % (HOST, PORT), auth=(USERNAME, PASSWORD)).json()
 except Exception, e:
     print "Plugin Failed! %s" % e
-
+    
 metrics = {}
 
 
@@ -27,17 +27,17 @@ def flatten(d, result=None):
             for keyIn in value:
                 value1[".".join([key,keyIn])]=value[keyIn]
             flatten(value1, result)
-        elif isinstance(value, (list, tuple)):
+        elif isinstance(value, (list, tuple)):   
             for indexB, element in enumerate(value):
                 if isinstance(element, dict):
                     value1 = {}
                     index = 0
                     for keyIn in element:
-                        newkey = ".".join([key,keyIn])
+                        newkey = ".".join([key,keyIn])        
                         value1[".".join([key,keyIn])]=value[indexB][keyIn]
                         index += 1
                     for keyA in value1:
-                        flatten(value1, result)
+                        flatten(value1, result)   
         else:
             result[key]=value
     return result
@@ -55,20 +55,19 @@ def prepend_dict(d, s):
     return dict(map(lambda (key, value): (s + str(key), value), d.items()))
 
 
-def get_data(data, segment, prefix):
+def get_data(data, prefix):
     flattened_data = flatten(data)
-    appended_data = prepend_dict(flattened_data, prefix + '.' + segment + '.')
+    appended_data = prepend_dict(flattened_data, prefix)
     return appended_data
 
 
 def get_overview():
     overview = {}
     resp = requests.get("http://%s:%s/api/overview" % (HOST, PORT), auth=(USERNAME, PASSWORD)).json()
-    overview.update(get_data(resp, 'message_stats', 'overview'))
-    overview.update(get_data(resp, 'queue_totals', 'overview'))
-    overview.update(get_data(resp, 'object_totals', 'overview'))
+    overview.update(get_data(resp, 'overview.'))
+    overview.update(get_data(resp, 'overview.'))
+    overview.update(get_data(resp, 'overview.'))
     return overview
-
 
 def get_queue_stats(vhost, queue):
     queue_stats = {}
@@ -77,11 +76,10 @@ def get_queue_stats(vhost, queue):
     else:
         resp = requests.get("http://%s:%s/api/queues/%s/%s" % (HOST, PORT, quote(vhost), queue), auth=(USERNAME, PASSWORD)).json()
     try:
-        queue_stats.update(get_data(resp, 'message_stats', 'queues.' + queue))
+        queue_stats.update(get_data(resp, 'queues.' + queue + '.'))
         return queue_stats
     except:
         return {}
-
 
 def get_vhosts():
     vhosts = []
@@ -89,15 +87,13 @@ def get_vhosts():
     for vhost in resp:
         vhosts.append(vhost['name'])
     return vhosts
-
-
+    
 def get_queues(vhost):
     queues = []
     resp = requests.get("http://%s:%s/api/queues/%s" % (HOST, PORT, vhost), auth=(USERNAME, PASSWORD)).json()
     for queue in resp:
         queues.append(queue['name'])
     return queues
-
 
 metrics.update(get_overview())
 vhosts = get_vhosts()
@@ -113,3 +109,4 @@ for k, v in metrics.iteritems():
 
 print perf_data
 sys.exit(0)
+
