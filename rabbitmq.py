@@ -8,7 +8,9 @@ HOST = "localhost"
 USERNAME = ""
 PASSWORD = ""
 PORT = "15672"
+
 QUEUE_STATS = False
+EXCHANGE_STATS = False
 
 
 def flatten(d, result=None):
@@ -65,7 +67,15 @@ def get_queue_stats(vhost, queue):
         resp = requests.get("http://%s:%s/api/queues/%%2F/%s" % (HOST, PORT, queue), auth=(USERNAME, PASSWORD)).json()
     else:
         resp = requests.get("http://%s:%s/api/queues/%s/%s" % (HOST, PORT, quote(vhost), queue), auth=(USERNAME, PASSWORD)).json()
-    return get_data(resp, 'queues.' + queue + '.')
+    return get_data(resp, 'vhost.' + vhost + '.' + 'queue.' + queue + '.')
+
+
+def get_exchange_stats(vhost, exchange):
+    if vhost == '/':
+        resp = requests.get("http://%s:%s/api/exchanges/%%2F/%s" % (HOST, PORT, exchange), auth=(USERNAME, PASSWORD)).json()
+    else:
+        resp = requests.get("http://%s:%s/api/exchanges/%s/%s" % (HOST, PORT, quote(vhost), exchange), auth=(USERNAME, PASSWORD)).json()
+    return get_data(resp, 'vhost.' + vhost + '.' + 'exchange.'  + exchange + '.')
 
 
 def get_vhosts():
@@ -83,18 +93,36 @@ def get_queues(vhost):
         queue_names.append(queue['name'])
     return queue_names
 
+
+def get_exchanges(vhost):
+    exchange_names = []
+    resp = requests.get("http://%s:%s/api/exchanges/%s" % (HOST, PORT, vhost), auth=(USERNAME, PASSWORD)).json()
+    for exchange in resp:
+        exchange_names.append(exchange['name'])
+    return exchange_names
+
 try:
     # overview metrics
     metrics = {}
     metrics.update(get_overview())
 
+    if QUEUE_STATS or EXCHANGE_STATS:
+        vhosts = get_vhosts()
+
     # queue statistics
     if QUEUE_STATS:
-        vhosts = get_vhosts()
         for vhost in vhosts:
             queues = get_queues(vhost)
             for queue in queues:
                 metrics.update(get_queue_stats(vhost, queue))
+
+    # exchange statistics
+    if EXCHANGE_STATS:
+        for vhost in vhosts:
+            exchanges = get_exchanges(vhost)
+            for exchange in exchanges:
+                if exchange:
+                    metrics.update(get_exchange_stats(vhost, exchange))
 
     # nagios format output
     perf_data = "OK | "
