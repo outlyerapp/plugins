@@ -28,14 +28,14 @@ try:
     config = ConfigParser.RawConfigParser(allow_no_value=True)
     config.readfp(FakeSecHead(io.BytesIO(sample_config)))
 
-    node_name = config.get('section', 'nodename')
+    nodename = config.get('section', 'nodename')
 except Exception, e:
     print "Plugin Failed! Error reading config file: %s" % e
 
 
-def query_ddb(p):
+def query_ddb(path):
     headers = {'Accept': 'application/json'}
-    return requests.get("http://localhost:8080/%s" % p, headers=headers).json()
+    return requests.get("http://localhost:8080/%s" % path, headers=headers).json()
 
 
 def get_buckets():
@@ -47,13 +47,16 @@ def get_metrics(bucket):
 
 try:
     metrics = {}
+    excludes = ("count", "skewness", "kurtosis")
     for metric in get_metrics('dalmatinerdb'):
         host = metric.split("'.'")[0].replace("'", '')
-        if host == node_name:
+        if host == nodename:
             points = query_ddb("?q=SELECT %s BUCKET 'dalmatinerdb' LAST 30s" % metric)['d'][0]['v']
-            average_value = float(reduce(lambda x, y: x + y, points) / len(points)) / 1000
-            path = '.'.join(metric.split("'.'")[1:]).replace("'", '')
-            metrics[path] = str(average_value) + 'ms'
+            path = '.'.join(metric.split("'.'")[1:]).replace("'",'')
+            average_value = float(reduce(lambda x, y: x + y, points) / len(points))
+            if not any(s in str(path) for s in excludes):
+                average_value = str(float(average_value) / 1000) + 'ms'
+            metrics[path] = str(average_value)
     output = "OK | "
     for k, v in metrics.iteritems():
         output += str(k) + '=' + str(v) + ';;;; '
