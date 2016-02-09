@@ -81,16 +81,20 @@ for line in reverse_read(LOGFILE):
             status_codes['4xx'] += 1
         if code.startswith('5'):
             status_codes['5xx'] += 1
-        if 'request_time' in data.iterkeys():
-            time_taken = data['request_time']
-            if 'min' not in times.iterkeys():
-                times['min'] = time_taken
-            times['count'] += 1
-            times['total'] += float(time_taken)
-            if time_taken > times['max']:
-                times['max'] = time_taken
-            if time_taken < times['min']:
-                times['min'] = time_taken
+        try:
+            if 'request_time' in data.iterkeys():
+                time_taken = data['request_time']
+                if 'min' not in times.iterkeys():
+                    times['min'] = time_taken
+                times['count'] += 1
+                times['total'] += float(time_taken)
+                if time_taken > times['max']:
+                    times['max'] = time_taken
+                if time_taken < times['min']:
+                    times['min'] = time_taken
+        except ValueError:
+            # Request time not castable to float (like '-')
+            pass
     else:
         break
 
@@ -102,7 +106,7 @@ for k, v in status_codes.iteritems():
 if times['count'] > 0:
     message += "avg_time=%0.2fs;;;; " % (float(times['total'])/float(times['count']))
 
-if 'request_time' in data.iterkeys():
+if all (key in times for key in ("max","min")):
     message += "max_time=%0.2fs;;;; min_time=%0.2fs;;;;" % (float(times['max']), float(times['min']))
 
 print message
