@@ -2,27 +2,42 @@
 
 import os
 import re
-from datetime import datetime
-import time
 import sys
-
-"""
-Reads through an nginx access log file and extracts a count of http status codes.
-
-To enable calculation of response times you need to enable more logging in Nginx. Add this to nginx.conf to the http block:
-
-        log_format timed_combined '$remote_addr - $remote_user [$time_local] '
-                                  '"$request" $status $body_bytes_sent '
-                                  '"$http_referer" "$http_user_agent" '
-                                  '"$request_time"';
-
-Then in your log directives use time_combined. For example:
-
-access_log /var/log/nginx/yourdomain.com.access.log timed_combined;
-
-"""
+import psutil
+import time
+from datetime import datetime
 
 LOGFILE = '/var/log/nginx/access.log'
+
+# nginx health check
+
+nginx_running = False
+
+def get_proc_name(proc):
+    try:
+        return proc.name()
+    except psutil.AccessDenied:
+        # IGNORE: we don't have permission to access this process
+        pass
+    except psutil.NoSuchProcess:
+        # IGNORE: process has died between listing and getting info
+        pass
+    except Exception, e:
+        print "error accessing process info: %s" % e
+    return None
+
+
+running_processes = {}
+for p in psutil.process_iter():
+    process_name = get_proc_name(p)
+    if process_name == 'nginx':
+        nginx_running = True
+
+if not nginx_running:
+    print "Plugin Failed! Nginx is not running"
+    sys.exit(2)
+
+# log file parsing
 
 combined = '$remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent"'
 timed_combined = '$remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" "$request_time"'
@@ -111,3 +126,4 @@ if all (key in times for key in ("max","min")):
 
 print message
 sys.exit(0)
+
