@@ -91,7 +91,8 @@ for line in reverse_read(LOGFILE):
                 times['max'] = time_taken
             if time_taken < times['min']:
                 times['min'] = time_taken
-
+    else:
+        break
 
             
 message = "OK | "
