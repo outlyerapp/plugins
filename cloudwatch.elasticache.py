@@ -23,7 +23,7 @@ EC_INSTANCE_ID = ''
 metrics = {
            "CPUUtilization": {"type":"float", "value":None, "uom":"%"},
            "SwapUsage": {"type":"float", "value":None, "uom":"B"},
-           "FreeableMemory": {"type":"float", "value":None, "uom":"B"},
+           "FreeableMemory": {"type":"float", "value":None, "uom":"GB"},
            "NetworkBytesIn": {"type":"float", "value":None, "uom":"B"},
            "NetworkBytesOut": {"type":"float", "value":None, "uom":"B"},
            "BytesUsedForCacheItems": {"type":"float", "value":None, "uom":"B"},
