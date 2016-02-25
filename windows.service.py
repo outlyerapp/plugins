@@ -23,3 +23,4 @@ try:
         
 except Exception, e:
     print "Plugin Failed: %s" % e
+    sys.exit(2)
