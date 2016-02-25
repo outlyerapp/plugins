@@ -1,28 +1,25 @@
 #!/usr/bin/env python
-import wmi
 import sys
+import subprocess
 
-"""
-Show current running services on Windows by running : net start
-Enter the ones you want to alert on into checks
-"""
+# set to the name of the service as shown by 'sc query' i.e not the display name
+SERVICE = ''
 
-checks = ['']
-service_map = {}
-
-c = wmi.WMI()
-services = c.Win32_Service()
-for s in services :
-    service_map[s.Caption] = s.State
-
-output = ""
-exit = 0
-for check in checks:
-    if service_map[check] == "Running":
-        output += check + " is running! "
+try:
+    service_info = subprocess.check_output(['sc', 'query', SERVICE])
+    service = {}
+    for line in service_info.splitlines():
+        fields = line.split(':')
+        if len(fields) > 1:
+            k = fields[0].strip().lower()
+            v = fields[1].strip().lower()
+            service[k] = v
+    if 'running' in service['state']:
+        print "OK"
+        sys.exit(0)
     else:
-        output += check + " is down! "
-        exit = 2
-
-print output
-sys.exit(exit)
+        print "Service is NOT running"
+        sys.exit(2)
+        
+except Exception, e:
+    print "Plugin Failed: %s" % e
