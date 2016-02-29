@@ -15,7 +15,7 @@ for line in out.split("\n"):
     m = re.match(r"^([^ ]+) : ([0-9]+)", line)
     if m:
         k, v = m.groups()
-        if k.split('.')[-1] in ['min', 'median', 'max', 'standard_deviation', 'harmonic_mean', 'geometric_mean', 'arithmetic_mean']:
+        if k.split('.')[-1] in ['min', 'median', 'max', 'standard_deviation', 'harmonic_mean', 'geometric_mean', 'arithmetic_mean', 'p50', 'p75', 'p95', 'p99', 'p999']:
             v = str(0.001 * float(v)) + 'ms'
         # At some point we should fix floats reported by dalmatina
         elif k.split('.')[-1] == 'variance':
