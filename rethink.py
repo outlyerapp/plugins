@@ -1,4 +1,4 @@
-#!/usr/bin/env/python
+#!/usr/bin/env python
 import rethinkdb as r
 import sys
 from socket import gethostname
