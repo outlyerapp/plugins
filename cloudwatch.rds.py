@@ -14,6 +14,8 @@ RDS_INSTANCE_ID = ''
 ### Real code
 metrics = {"BinLogDiskUsage": {"type":"float", "value":None, "uom":"B"},
            "CPUUtilization":{"type":"float", "value":None, "uom":"%"},
+           "CPUCreditUsage":{"type":"float", "value":None, "uom":""},
+           "CPUCreditBalance":{"type":"float", "value":None, "uom":""},
            "DatabaseConnections":{"type":"int", "value":None, "uom":""},
            "DiskQueueDepth":{"type":"int", "value":None, "uom":""},
            "FreeableMemory":{"type":"float", "value":None, "uom":"GB"},
