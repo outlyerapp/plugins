@@ -37,7 +37,7 @@ message = "OK | "
 conn = cloudwatch.connect_to_region(AWS_REGION, aws_access_key_id=AWS_KEY,
                                      aws_secret_access_key=AWS_SECRET)
 
-end = datetime.datetime.now()
+end = datetime.datetime.utcnow()
 start = end - datetime.timedelta(minutes=5)
 
 for k,vh in metrics.items():
@@ -47,6 +47,7 @@ for k,vh in metrics.items():
     except Exception, e:
         print "WARN - status err Error running rds_stats: %s" % e.message
         sys.exit(1)
+
     # deal with the metrics returned
     if len(res) > 0:
         average = res[-1]["Average"] # last item in result set
