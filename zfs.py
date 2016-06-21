@@ -5,7 +5,7 @@ import sys
 """
 The zpool command needs to be run as root. Paste this into the bottom of /etc/sudoers
 
-dataloop ALL=(ALL) NOPASSWD: sudo /sbin/zpool get -H -p all
+dataloop ALL=(ALL) NOPASSWD: /sbin/zpool get -H -p all
 
 """
 metrics = {'size': 'bytes',
