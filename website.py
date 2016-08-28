@@ -4,8 +4,8 @@ import requests
 from requests import exceptions
 import sys
 
-URL = 'https://www.gradschool.psu.edu'
-STRING = '<a href="/prospective-students/how-to-apply/">How to Apply</a>'
+URL = 'https://www.google.com'
+STRING = '<title>Google</title>'
 
 try:
     response = requests.get(URL, verify=True)
