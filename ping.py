@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import sys
 from threading import Thread
 import subprocess
 from Queue import Queue
@@ -49,7 +50,12 @@ for a in addresses:
 queue.join()
 
 output = "OK | "
+exit_code = 0
 for k, v in metrics.iteritems():
     output += str(k) + '=' + str(v) + ';;;; '
+    if k.endswith('.status'):
+        if v == 2:
+            exit_code = 2
 
 print output
+sys.exit(exit_code)
