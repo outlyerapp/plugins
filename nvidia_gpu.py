@@ -54,17 +54,24 @@ metrics_list = [
     "clocks.max.graphics",
     "clocks.max.sm",
     "clocks.max.memory"]
-    
+
+def is_digit(d):
+    try:
+        float(d)
+    except ValueError:
+        return False
+    return True
+
 try:
     query_string = '--query-gpu=' + ','.join(map(str, metrics_list))
     result_list = subprocess.check_output(['/usr/bin/nvidia-smi', query_string, '--format=csv,noheader,nounits']).split(',')
     output = "OK | "
     for i, metric in enumerate(metrics_list):
-        if '[Not Supported]' not in result_list[i]:
-            output += metric + '=' + result_list[i].strip() + ';;;;'
+        if '[Not Supported]' not in result_list[i] and is_digit(result_list[i]) :
+            output += metric + '=' + result_list[i].strip() + ';;;; '
     print output
     sys.exit(0)
-    
+
 except Exception, e:
     print "FAIL! %s" % e
     sys.exit(2)
