@@ -62,7 +62,7 @@ try:
 
     buf = StringIO()
     for result in cur:
-    buf.write("{prefix}.{name}={value};;;; ".format(prefix=PREFIX, name=result[0], value=result[1]))
+        buf.write("{prefix}.{name}={value};;;; ".format(prefix=PREFIX, name=result[0], value=result[1]))
 
     cur.close()
     con.close()
