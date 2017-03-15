@@ -4,10 +4,6 @@ import os
 import sys
 from StringIO import StringIO
 
-#####################
-# SCRIPT PARAMETERS #
-#####################
-
 # The SQL query you want to run. It should return two columns:
 # a string and a number. The string will be used as the metric
 # name. 
@@ -20,21 +16,28 @@ from StringIO import StringIO
 # etc.
 #
 SQL = """
-    select ename, sal from scott.emp
+	select ename, sal from scott.emp
 """
 
-# Details of your Oracle installation
-#
+# Location of your ORACLE_HOME. 
 ORACLE_HOME = "/u01/app/oracle/product/11.2.0/dbhome_1"
+
+# Login details for the Oracle DB.
 ORACLE_USER = "scott"
 ORACLE_PASSWORD = "tiger"
+
+# Hostname and port number of the TNS listener.
 ORACLE_HOST = "localhost"
 ORACLE_PORT = 1521
+
+# Oracle DB service name, as reported by "lsnrctl status".
+ORACLE_SVC = "oracle11g"
+
+# If ORACLE_SVC is not set, we will use the SID instead.
 ORACLE_SID = "ORCL"
 
 # Additional prefix to add to metric names. The generated metrics
 # will be named like "oracle_query.PREFIX.name = value".
-#
 PREFIX="salary"
 
 
@@ -54,7 +57,11 @@ if 'ORACLE_HOME' not in os.environ:
 try:
     import cx_Oracle
 
-    dsn = cx_Oracle.makedsn(ORACLE_HOST, ORACLE_PORT, ORACLE_SID)
+    if ORACLE_SVC:
+        dsn = cx_Oracle.makedsn(ORACLE_HOST, ORACLE_PORT, service_name=ORACLE_SVC)
+    else:
+        dsn = cx_Oracle.makedsn(ORACLE_HOST, ORACLE_PORT, ORACLE_SID)
+
     con = cx_Oracle.connect('{user}/{password}@{dsn}'.format(user=ORACLE_USER, password=ORACLE_PASSWORD, dsn=dsn))
 
     cur = con.cursor()
@@ -62,7 +69,7 @@ try:
 
     buf = StringIO()
     for result in cur:
-        buf.write("{prefix}.{name}={value};;;; ".format(prefix=PREFIX, name=result[0], value=result[1]))
+	buf.write("{prefix}.{name}={value};;;; ".format(prefix=PREFIX, name=result[0], value=result[1]))
 
     cur.close()
     con.close()
@@ -76,4 +83,3 @@ except ImportError as ex:
 except cx_Oracle.DatabaseError as ex:
     print 'CRITICAL | Oracle database error: ' + str(ex.message)
     sys.exit(2)
-
