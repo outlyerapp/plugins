@@ -5,16 +5,13 @@ import re
 import platform
 
 '''
-This script pings an address and returns the status and round trip stats for each
+This script pings a list of addresses an returns the status and round trip stats for each
 '''
 
-addresses = "microsoft.com"
-num_pings = 5
+addresses = ["microsoft.com", "google.com"]
+num_pings = 2
 
-
-queue = Queue()
 metrics = {}
-
 
 def ping_linux(i, q):
     address = q
@@ -35,7 +32,6 @@ def ping_linux(i, q):
         metrics[address + '.stddev'] = rtt[3] + 'ms'
     return metrics
 
-
 def ping_windows(i, q):
     regex = r'\n[\s]{4}Minimum\s=\s(?P<min>[0-9]+(ms|s)),\sMaximum\s=\s(?P<max>[0-9]+(ms|s)),\sAverage\s=\s(?P<avg>[0-9]+(ms|s))'
     address = q
@@ -55,13 +51,12 @@ def ping_windows(i, q):
         metrics[address + '.max'] = str(processed_results.group('max'))
     return metrics
 
-if platform.system() == "Windows":
-    metrics = ping_windows(num_pings, addresses)
-if platform.system() == "Linux":
-    metrics = ping_linux(num_pings, addresses)
+for address in addresses:
+    if platform.system() == "Windows":
+        metrics = ping_windows(num_pings, address)
+    if platform.system() == "Linux":
+        metrics = ping_linux(num_pings, address)
 
-
-#print metrics
 output = "OK | "
 exit_code = 0
 for k, v in metrics.iteritems():
