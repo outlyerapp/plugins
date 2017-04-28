@@ -6,7 +6,7 @@
 
 import sys
 import os
-import pickle 
+import pickle
 
 ############### config ##################
 stats_files = {"arcstats_file": '/proc/spl/kstat/zfs/arcstats', "zilstats_file": '/proc/spl/kstat/zfs/zil', "dmustats_file": '/proc/spl/kstat/zfs/dmu_tx'}
@@ -19,88 +19,85 @@ tmp_file = 'dataloop-zfs'
 
 ################ code #####################
 
-def query_zfs(file_locations)
+def query_zfs(file_locations):
     """Queries zfs stats in proc
-    accepts: List of files to query.  
+    accepts: List of files to query.
     returns: dict of results from files with each metric as a key"""
-    stats = {}
-    for sfile, location in file_locations.iteritems():
+    results = {}
+    for sfile in file_locations:
         try:
-            with open(sfile, 'r') as f:
+            with open(file_locations[sfile], 'r') as f:
                 garbage = f.readline()
                 header = f.readline()
                 stats = f.read()
-                for i in stats.split('\n')
-                    stats[i.split[0]] = i.split[2]
-        
+                for i in stats.split('\n'):
+                    if len(i) > 1:
+                        name = i.split()[0]
+                        value = i.split()[2]
+                        results[name] = value
+
         except Exception as E:
-            print "CRITICAL - failed to parse arcstats: %s" % E
+            print "CRITICAL - failed to parse file: %s" % E
             sys.exit(2)
-    
+    return results
+
 def bytes_to_gb(results):
-    """ converts bytes to gb 
+    """ converts bytes to gb
     accepts: dict of results
     returns: dict of results with bytes converted to gb"""
     for key in results:
-        for metric in state_in_bytes:
+        for metric in stats_in_bytes:
             if key == metric:
-                results[key] =  str(round(float(results[key]) / 1024 / 1024 / 1024, 2) + GB)
+                results[key] =  (str(round(float(results[key]) / 1024 / 1024 / 1024, 2)) + "GB")
     return results
 
-def get_last_resuls(results_file):
-    """ recovers a dict of the previous results form a tempory file
+def get_last_results(results_file, results):
+    """ recovers a dict of the previous results form a tempory file if present,
+    otherwise returns current results to get things going.
     accepts: location of tempory file
     returns: dict of results form that file"""
-    with open(results_file, 'rb') as handle:
-        b = pickle.load(handle)
-    return b
+    if os.path.exists(results_file):
+        with open(results_file, 'rb') as handle:
+            b = pickle.load(handle)
+        return b
+    else:
+        return results
 
-def save_current_results(results_filei, results):
+def save_current_results(results_file, results):
     """Saves current results to a tempory file
     accepts: results to save, location of tempory file"""
-    with open(resuts_files, 'wb') as handle:
+    with open(results_file, 'wb') as handle:
         pickle.dump(results, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 def add_rate_results(results, old_results, cumulative_results, discard_cumulative):
     """adds rate results to a results dict, optionaly overwriting cumulative result
-    accepts: results dict, old results dict list of cumulative result keywords to process 
-    and weather to throw away the cumulative results 
+    accepts: results dict, old results dict list of cumulative result keywords to process
+    and weather to throw away the cumulative results
     returns: results dict"""
-   for metric, value in results.iteritems():
-       for item in cumlative_results:
-           if item in metric:
-               if discard_cumulative:
-                   results[metric] = results[metric] - old_results[metric]
-               else:
-                   results[(metric + "-rate")] = results[metric] - old_results[metric]
+    for metric, value in results.iteritems():
+        for item in cumulative_results:
+            if item in metric:
+                if discard_cumulative:
+                    results[metric] = int(results[metric]) - int(old_results[metric])
+                else:
+                    results[(metric + "-rate")] = int(results[metric]) - int(old_results[metric])
     return results
-                   
-                   
+
+
 if not os.path.exists(tmp_dir):
     print "tempory directory does not extst!  exiting..."
     sys.exit(3)
 
 current_results = query_zfs(stats_files)
-last_results = get_last_results((tmp_dir + tmp_file)
-save_current_results(current_results)
-rateifyed_results = add_rate_results(current_results, last_results, cumulative_results_keywords, discarde_cumulative)
+last_results = get_last_results((tmp_dir + tmp_file), current_results)
+save_current_results((tmp_dir + tmp_file), current_results)
+rateifyed_results = add_rate_results(current_results, last_results, cumulative_results_keywords, discard_cumulative)
 if convert_to_gb:
     rateifyed_results = bytes_to_gb(rateifyed_results)
 
 message = "OK | "
 
-#for line in stats_lines:
-#    fields = line.split()
-#    if len(fields) > 0:
-#        for stat in gbstats:
-#            if stat == fields[0]:
-#                message += "%s=%sgb;;;; " % (fields[0] + '_GB', bytes_to_gb(fields[2]))
-#        message += "%s=%s;;;; " % (fields[0], fields[2])
-#
-
 for key in rateifyed_results:
     message += "%s=%s;;;; " % (key, rateifyed_results[key])
-
-
 
 print message
