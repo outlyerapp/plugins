@@ -10,7 +10,7 @@ import pickle
 
 ############### config ##################
 stats_files = {"arcstats_file": '/proc/spl/kstat/zfs/arcstats', "zilstats_file": '/proc/spl/kstat/zfs/zil', "dmustats_file": '/proc/spl/kstat/zfs/dmu_tx'}
-cumulative_results_keywords = ["hits", "misses"]
+cumulative_results_keywords = ["hits", "misses", "dmu_tx_dirty_throttle"]
 stats_in_bytes = ['c', 'c_max']
 discard_cumulative = True
 convert_to_gb = True
