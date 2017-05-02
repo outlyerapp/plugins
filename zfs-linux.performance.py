@@ -83,9 +83,12 @@ def add_rate_results(results, old_results, cumulative_results, discard_cumulativ
                     results[(metric + "-rate")] = int(results[metric]) - int(old_results[metric])
     return results
 
-
 if not os.path.exists(tmp_dir):
-    print "tempory directory does not extst!  exiting..."
+    try:
+        os.makedirs(tmp_dir)
+    except:
+        raise
+        print "tempory directory does not extst and attempting to create it failed!  exiting..."
     sys.exit(3)
 
 current_results = query_zfs(stats_files)
