@@ -90,6 +90,7 @@ if ERROR == 0:
     exit(0)
 if ERROR == 1:
     print "WARNING %s" % E_MESSAGE
+    exit(1)
 elif ERROR == 2:
     print "CRITICAL %s" % E_MESSAGE
     exit(2)
