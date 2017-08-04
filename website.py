@@ -22,5 +22,9 @@ except exceptions.SSLError:
     print "Plugin Failed! SSL Certificate verification failed."
     sys.exit(2)
 
+except exceptions.ConnectionError, e:
+    if "Connection refused" in str(e):
+        print "Connection Refused"
+        sys.exit(2)
 
 
